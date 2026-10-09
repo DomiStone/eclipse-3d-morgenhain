@@ -29,9 +29,10 @@ main{max-width:850px}
 const villagers=[['Mira',0,10,'#9d79b6'],['Borin',-7,15,'#a78a67'],['Lysa',7,3,'#d5ad67'],['Elara',-6,4,'#ca8976'],['Rurik',2,-18,'#7897bc'],['Sven',-17,0,'#7897bc'],['Finn',4,-4,'#d6b365'],['Mila',-4,-4,'#d67a96'],['Theo',4,7,'#6eafbf'],['Ida',-4,7,'#cfbd79'],['Tarek',17,-15,'#9ca867'],['Hilda',-17,-15,'#b2aa68']];
 const houses=[[-13,-12,9,8], [13,-12,10,8],[-13,11,10,9],[13,11,9,9],[0,17,10,8]];
 let p,npcs,enemies,chests,quest,wolves,bossDead;
+let worldSeconds=0,guards=[{x:-5.8,z:-28.4,patrol:0,walk:0},{x:5.8,z:-28.4,patrol:0,walk:0}];
 const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),d=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 function note(t){$('msg').textContent=t;msgTime=4}
-function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>120||Math.abs(p.z)>120){p.x=0;p.z=-9}if(!Number.isFinite(p.hp))p.hp=100;if(!Number.isFinite(p.a))p.a=0;quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=Number.isFinite(p.a)?p.a:0;moveSpeed=0;strafeSpeed=0;turnSpeed=0;last=null;gate=0;enemies=data?.enemies||Array.from({length:13},(_,i)=>{let a=i*.55+2,r=39+(i%3)*6;return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:6,type:'wolf',phase:i}});if(!bossDead&&!enemies.some(e=>e.type==='boss'))enemies.push({x:0,z:-70,hp:36,type:'boss',phase:0});chests=data?.chests||[{x:13,z:-44,open:false},{x:-16,z:-49,open:false}];npcs=villagers.map((v,i)=>({name:v[0],x:v[1],z:v[2],homeX:v[1],homeZ:v[2],color:v[3],phase:i*1.7,taskStep:0,taskWait:2+i%4,indoors:false,carryingWater:false}));note('🏰 Willkommen in Morgenhain!');hud()}
+function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>120||Math.abs(p.z)>120){p.x=0;p.z=-9}if(!Number.isFinite(p.hp))p.hp=100;if(!Number.isFinite(p.a))p.a=0;quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=Number.isFinite(p.a)?p.a:0;moveSpeed=0;strafeSpeed=0;turnSpeed=0;last=null;gate=0;worldSeconds=0;guards.forEach(g=>{g.patrol=0;g.walk=0;g.attackCooldown=0});enemies=data?.enemies||Array.from({length:13},(_,i)=>{let a=i*.55+2,r=39+(i%3)*6;return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:6,type:'wolf',phase:i}});if(!bossDead&&!enemies.some(e=>e.type==='boss'))enemies.push({x:0,z:-70,hp:36,type:'boss',phase:0});chests=data?.chests||[{x:13,z:-44,open:false},{x:-16,z:-49,open:false}];npcs=villagers.map((v,i)=>({name:v[0],x:v[1],z:v[2],homeX:v[1],homeZ:v[2],color:v[3],phase:i*1.7,taskStep:0,taskWait:2+i%4,indoors:false,carryingWater:false}));note('🏰 Willkommen in Morgenhain!');hud()}
 function save(){try{localStorage.setItem('morgenhain-v2',JSON.stringify({p,quest,wolves,bossDead,clock,enemies,chests}))}catch(e){}}
 function hud(){ $('hud').textContent='❤️ '+Math.ceil(p.hp)+'/100 · ⭐ '+p.level+' · 🪙 '+p.gold+' · 🧪 '+p.potions+' · ⚔️ +'+p.power;$('quest').innerHTML='<strong>'+['📜 Sprich mit Mira','🐺 Besiege 3 Schattenwölfe ('+Math.min(wolves,3)+'/3)','🏰 Berichte Mira','👹 Besiege den Schattenwächter','🏆 Morgenhain ist gerettet!'][quest]+'</strong><br><small>XP '+p.xp+'/'+(p.level*30)+' · '+(quest===0?'Mira steht nördlich des Brunnens.':quest===1?'Verlasse das Dorf durch das südliche Tor.':quest===2?'Kehre zu Mira zurück.':quest===3?'Der Boss wartet weit südlich des Dorfes.':'Erkunde die Wildnis und verbessere deine Ausrüstung.')+'</small>'}
 function collision(x,z){let r=Math.max(Math.abs(x),Math.abs(z));if(r>22.5&&r<33&&!(Math.abs(x)<3.6&&z< -22&&z> -34&&gate>.7))return true;for(let h of houses)if(Math.abs(x-h[0])<h[2]/2+1&&Math.abs(z-h[1])<h[3]/2+1)return true;return Math.hypot(x,z)<3.3}
@@ -284,6 +285,21 @@ function villageDetails(){
   cube(x-.17,.42,z-.10,.45,.12,.35,'#a4a398');
  }
 }
+function renderGateGuards(){
+ for(let i=0;i<guards.length;i++){
+  const g=guards[i],step=Math.sin(g.walk||0);
+  humanoid(g.x,g.z,'#596f83',1.08,g.walk);
+  // Helmet, shield, spear and armored boots.
+  cube(g.x,3.42,g.z,.96,.35,.90,'#8797a3');
+  cube(g.x,3.67,g.z,.49,.17,.48,'#b7bfc5');
+  cube(g.x+(i===0?-.77:.77),1.1,g.z-.22,.22,1.45,.17,'#b0bac1');
+  cube(g.x+(i===0?-.77:.77),2.5,g.z-.22,.25,.48,.23,'#d8d9d1');
+  cube(g.x+(i===0?.77:-.77),1.08,g.z-.28,.18,4.4,.18,'#6e5841');
+  cube(g.x+(i===0?.77:-.77),5.37,g.z-.28,.36,.76,.36,'#d2d5d4');
+  cube(g.x,1.2,g.z-.44,.88,1.02,.18,'#52697c');
+  cube(g.x,1.35,g.z-.55,.24,.40,.08,'#c5ae75');
+ }
+}
 function render(){if(!gl||!program)return;
 // Match the WebGL drawing buffer to the actual CSS viewport to avoid stretching.
 const bounds=cv.getBoundingClientRect();
@@ -340,14 +356,17 @@ if(gate<.995){
 for(let i=0;i<houses.length;i++){
  detailedHouse(houses[i],i);
  const [hx,hz,hw,hd]=houses[i],cx=hx+hw*.25,cz=hz+hd*.12;
- // Stone chimney, soot-dark cap and staggered drifting smoke.
+ // Stone chimney and continuously rising, wind-drifting smoke.
  cube(cx,6.4,cz,1.25,2.7,1.2,'#847f75');
  cube(cx,8.85,cz,1.5,.25,1.45,'#5e5b55');
  cube(cx,9.05,cz,.83,.12,.83,'#353a3b');
- for(let puff=0;puff<3;puff++){
-  const drift=(clock*.32+i*.8+puff*.55)%3;
-  const px=cx+drift*.33,py=9.5+puff*.85+drift*.18,pz=cz+drift*.24;
-  cube(px,py,pz,.36+puff*.22,.24+puff*.15,.38+puff*.20,puff===0?'#a5a9a5':'#bec1b9');
+ for(let puff=0;puff<7;puff++){
+  // Each puff rises from the chimney, expands, then starts again.
+  const age=(worldSeconds*.48+puff/7+i*.137)%1;
+  const sway=Math.sin(worldSeconds*.62+i*2.1+age*6)*.24;
+  const px=cx+age*3.1+sway,py=9.6+age*15.5,pz=cz+age*1.6;
+  const size=.35+age*1.25;
+  cube(px,py,pz,size,.22+age*.66,size,puff%3===0?'#a6a9a6':puff%3===1?'#bec0bb':'#d0d0c9');
  }
 }
 villageDetails();
@@ -430,6 +449,7 @@ for(let i=0;i<npcs.length;i++){
   cube(x+.65*scale,1.24*scale,z-sway*.12*scale,.14*scale,.25*scale,.21*scale,'#b78c70');
  }
 }
+renderGateGuards();
 for(let e of enemies)shadowWolf(e);
 let px=p.x,pz=p.z;rotatePlayer=true;
 /* First-person camera: the player body must not obstruct the view. */
@@ -471,7 +491,7 @@ viewModel=false;
 gl.clear(gl.DEPTH_BUFFER_BIT);
 gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.DYNAMIC_DRAW);
 gl.drawArrays(gl.TRIANGLES,0,verts.length/6)}
-function update(ms){try{let dt=last===null?0:Math.max(0,Math.min((ms-last)/1000,.05));last=ms;clock=(clock+dt*.15)%24;manualCam=Math.max(0,manualCam-dt);let ix=joy.x+(keys.d?1:0)-(keys.a?1:0),iy=joy.y+(keys.s?1:0)-(keys.w?1:0),mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1}gate=clamp(gate+((Math.abs(p.x)<9&&Math.abs(p.z+25)<17)?1:-1)*dt*3.5,0,1);// Smooth character motion: dead zones, acceleration, braking and turn inertia.
+function update(ms){try{let dt=last===null?0:Math.max(0,Math.min((ms-last)/1000,.05));last=ms;worldSeconds+=dt;clock=(clock+dt*.15)%24;manualCam=Math.max(0,manualCam-dt);let ix=joy.x+(keys.d?1:0)-(keys.a?1:0),iy=joy.y+(keys.s?1:0)-(keys.w?1:0),mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1}gate=clamp(gate+((Math.abs(p.x)<9&&Math.abs(p.z+25)<17)?1:-1)*dt*3.5,0,1);// Smooth character motion: dead zones, acceleration, braking and turn inertia.
 // Mobile FPS controls: left stick moves; right-side swipe aims.
 const deadZone=.12;
 const axis=v=>Math.abs(v)<=deadZone?0:Math.sign(v)*(Math.abs(v)-deadZone)/(1-deadZone);
@@ -537,6 +557,21 @@ for(let i=0;i<npcs.length;i++){
   if(n.taskStep===13)n.taskWait=5+(i%4)*3;
   n.taskStep=(n.taskStep+1)%waypoints.length;
   n.idle=true;
+ }
+}
+// Gate watch: sentries patrol the entrance, scan for wolves and repel nearby threats.
+for(let i=0;i<guards.length;i++){
+ const g=guards[i],baseX=i===0?-5.8:5.8;
+ g.patrol+=dt;
+ const targetZ=-28.4+Math.sin(g.patrol*.42+i*2)*2.1;
+ const dz=targetZ-g.z;
+ if(Math.abs(dz)>.08){const step=Math.sign(dz)*Math.min(Math.abs(dz),dt*.85);g.z+=step;g.walk+=Math.abs(step)*6}
+ g.x=baseX;
+ g.attackCooldown=Math.max(0,(g.attackCooldown||0)-dt);
+ const enemy=enemies.find(e=>e.type!=='boss'&&e.hp>0&&Math.hypot(e.x-g.x,e.z-g.z)<8.5);
+ if(enemy&&g.attackCooldown<=0){
+  enemy.hp-=2;g.attackCooldown=1.8;
+  if(enemy.hp<=0){enemies.splice(enemies.indexOf(enemy),1);if(msgTime<=0)note('🛡️ Die Torwache hat einen Schattenwolf vertrieben!')}
  }
 }
 for(let e of enemies){e.phase+=dt;let dd=d(p,e);if(dd<18&&dd>2.2&&p.hp>0){let nx=e.x+(p.x-e.x)/dd*dt*(e.type==='boss'?1.2:2),nz=e.z+(p.z-e.z)/dd*dt*(e.type==='boss'?1.2:2);if(Math.max(Math.abs(nx),Math.abs(nz))>34){e.x=nx;e.z=nz}}if(dd<(e.type==='boss'?3.3:2.1)&&hitDelay<=0&&p.hp>0){p.hp=Math.max(0,p.hp-(e.type==='boss'?20:9));hitDelay=1.1;note(p.hp?'💥 Monsterangriff!':'💀 Du bist besiegt. Drücke Neustart.');hud()}}
