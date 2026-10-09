@@ -149,6 +149,53 @@ function wildTree(x,z,seed){
   cube(x-.65,yy+.2,z-width*.28,width*.34,1.15,.35,'#527c51');
  }
 }
+function villageAnimal(x,z,kind,phase){
+ const bob=Math.sin(phase*2.4)*.055;
+ if(kind==='chicken'){
+  cube(x,.34+bob,z,.58,.58,.72,'#e2d8bd');
+  cube(x,.78+bob,z-.29,.34,.36,.33,'#f2e8ce');
+  cube(x,.78+bob,z-.51,.23,.13,.27,'#d49a46');
+  cube(x,.99+bob,z-.28,.16,.18,.18,'#bb5444');
+  for(const side of [-1,1]){
+   cube(x+side*.16,0,z+.06,.07,.27,.08,'#b48a53');
+   cube(x+side*.17,.85+bob,z-.45,.055,.055,.06,'#302e2b');
+  }
+ }else{
+  cube(x,.66+bob,z,1.35,1.16,1.9,'#c9b79a');
+  cube(x,1.36+bob,z-.78,.91,.82,.78,'#d8c8a9');
+  cube(x,1.64+bob,z-.91,.69,.54,.67,'#d9c9aa');
+  for(const side of [-1,1]){
+   cube(x+side*.48,0,z+.55,.25,.82,.28,'#8a7765');
+   cube(x+side*.48,0,z-.55,.25,.82,.28,'#8a7765');
+   cube(x+side*.29,1.91+bob,z-.77,.25,.39,.23,'#b6a080');
+   cube(x+side*.24,1.51+bob,z-1.22,.10,.10,.10,'#292b2b');
+  }
+  cube(x,1.25+bob,z-1.22,.53,.27,.37,'#947f72');
+ }
+}
+function farmCorner(){
+ // A small fenced animal enclosure away from the central footpath.
+ for(let x=8;x<=20;x+=3){
+  for(const z of [-19,-8]){
+   cube(x,0,z,.22,1.5,.22,'#816444');
+   cube(x,.58,z,2.9,.17,.15,'#987b55');
+   cube(x,1.14,z,2.9,.15,.15,'#987b55');
+  }
+ }
+ for(let z=-19;z<=-8;z+=2.75){
+  for(const x of [8,20]){
+   cube(x,0,z,.22,1.5,.22,'#816444');
+   cube(x,.58,z,.16,.17,2.7,'#987b55');
+   cube(x,1.14,z,.16,.15,2.7,'#987b55');
+  }
+ }
+ cube(17,0,-16,2.6,.55,1.8,'#b39b57');
+ for(let i=0;i<8;i++)cube(16+(i%4)*.56,.48,-16.4+Math.floor(i/4)*.72,.47,.28,.56,'#c5b16d');
+ const t=clock*1.8;
+ villageAnimal(11.5+Math.sin(t*.36)*.8,-13+Math.cos(t*.31)*.65,'sheep',t);
+ villageAnimal(15+Math.sin(t*.7)*1.1,-11.6+Math.cos(t*.48)*.8,'chicken',t+1);
+ villageAnimal(17+Math.cos(t*.57)*.8,-13.4+Math.sin(t*.6)*.7,'chicken',t+3);
+}
 function shadowWolf(e){
  const x=e.x,z=e.z,boss=e.type==='boss',sc=boss?2.3:1;
  const c=(dx,y,dz,w,h,d,shade)=>cube(x+dx*sc,y*sc,z+dz*sc,w*sc,h*sc,d*sc,shade);
@@ -294,7 +341,9 @@ for(let i=0;i<houses.length;i++){
  }
 }
 villageDetails();
+farmCorner();
 cube(0,0,0,5,1.4,5,'#a8aba6');cube(0,1.4,0,4,.15,4,'#55b4d3');
+for(let ripple=0;ripple<3;ripple++){const shift=Math.sin(clock*2+ripple*2.1);cube(-1+ripple*.85,1.49,-.6+ripple*.46,.48+shift*.13,.025,.12,'#a1dce7');}
 // Wooden well frame, rope winch and shelter roof.
 for(const x of [-2.15,2.15])cube(x,1.4,0,.25,3.2,.28,'#694a34');
 cube(0,4.45,0,5.2,.25,3.0,'#78543b');
