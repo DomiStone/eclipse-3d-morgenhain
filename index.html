@@ -40,7 +40,14 @@ const faces=[
 for(let face of faces){let tint=face[4];for(let i of [0,1,2,0,2,3]){let a=face[i],xx=a[0],zz=a[2];if(viewModel){let localX=xx,localY=a[1],localZ=zz;if(swordPose){let dx=localX-swordPose.x,dy=localY-swordPose.y,dz=localZ-swordPose.z,tilt=swordPose.tilt,lean=swordPose.lean;let ty=dy*Math.cos(tilt)-dz*Math.sin(tilt),tz=dy*Math.sin(tilt)+dz*Math.cos(tilt);localX=swordPose.x+dx*Math.cos(lean)-ty*Math.sin(lean);localY=swordPose.y+dx*Math.sin(lean)+ty*Math.cos(lean);localZ=swordPose.z+tz}let co=Math.cos(p.a||0),si=Math.sin(p.a||0);xx=p.x+localX*co-localZ*si;zz=p.z+localX*si+localZ*co;a=[xx,2.85+localY,zz]}else if(rotatePlayer){let dx=xx-p.x,dz=zz-p.z,angle=p.a||0,co=Math.cos(angle),si=Math.sin(angle);xx=p.x+dx*co+dz*si;zz=p.z-dx*si+dz*co}verts.push(xx,a[1],zz,rgb[0]*tint,rgb[1]*tint,rgb[2]*tint)}}}
 function humanoid(x,z,color,scale=1){cube(x,0,z,.72*scale,1.2*scale,.5*scale,'#384e66');cube(x,1.1*scale,z,1.25*scale,1.65*scale,.65*scale,color);cube(x,2.75*scale,z,.75*scale,.78*scale,.75*scale,'#d6b59a');cube(x,3.45*scale,z,.85*scale,.25*scale,.9*scale,'#5a4a43')}
 function roof(x,z,w,d){cube(x,5.8,z,w+1.4,.5,d+1.4,'#69433c');cube(x,6.3,z,w+1,1,d+1,'#915b4d');cube(x,7.3,z,w*.65,.7,d*.8,'#a56a54');cube(x,8,z,w*.3,.4,d*.55,'#b77c5d')}
-function render(){if(!gl||!program)return;verts=[];
+function render(){if(!gl||!program)return;
+// Match the WebGL drawing buffer to the actual CSS viewport to avoid stretching.
+const bounds=cv.getBoundingClientRect();
+const pixelRatio=Math.min(window.devicePixelRatio||1,2);
+const width=Math.max(1,Math.round(bounds.width*pixelRatio));
+const height=Math.max(1,Math.round(bounds.height*pixelRatio));
+if(cv.width!==width||cv.height!==height){cv.width=width;cv.height=height}
+verts=[];
 const night=clock>20||clock<6,sky=night?[.08,.13,.23]:[.50,.70,.83];gl.viewport(0,0,cv.width,cv.height);gl.clearColor(...sky,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 cube(0,-.6,0,250,.4,250,'#6c9a67');
 cube(0,-.42,0,68,.13,68,'#4784a1');
@@ -131,7 +138,7 @@ function update(ms){try{let dt=last===null?0:Math.max(0,Math.min((ms-last)/1000,
 // Mobile FPS controls: left stick moves; right-side swipe aims.
 const deadZone=.12;
 const axis=v=>Math.abs(v)<=deadZone?0:Math.sign(v)*(Math.abs(v)-deadZone)/(1-deadZone);
-const forward=p.hp>0?-axis(iy):0,strafe=p.hp>0?-axis(ix):0;
+const forward=p.hp>0?-axis(iy):0,strafe=p.hp>0?axis(ix):0;
 const desiredForward=forward*(forward>=0?11:9);
 const desiredStrafe=strafe*8.5;
 const smoothing=1-Math.exp(-dt*(Math.abs(forward)+Math.abs(strafe)>.01?9:13));
