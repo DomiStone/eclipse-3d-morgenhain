@@ -28,7 +28,7 @@ function shader(type,src){let sh=gl.createShader(type);gl.shaderSource(sh,src);g
 if(gl){try{program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vert));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,frag));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));gl.useProgram(program);buffer=gl.createBuffer();loc.pos=gl.getAttribLocation(program,'position');loc.col=gl.getAttribLocation(program,'color');loc.proj=gl.getUniformLocation(program,'projection');loc.view=gl.getUniformLocation(program,'view');loc.light=gl.getUniformLocation(program,'light');gl.enable(gl.DEPTH_TEST)}catch(e){console.error(e);$('msg').textContent='WebGL konnte nicht gestartet werden: '+e.message;gl=null}}
 function perspective(fov,aspect,near,far){let f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0])}
 function lookAt(eye,target){let zx=eye[0]-target[0],zy=eye[1]-target[1],zz=eye[2]-target[2],len=Math.hypot(zx,zy,zz)||1;zx/=len;zy/=len;zz/=len;let xx=zz,xz=-zx,xy=0;len=Math.hypot(xx,xz)||1;xx/=len;xz/=len;let yx=zy*xz-zz*xy,yy=zz*xx-zx*xz,yz=zx*xy-zy*xx;return new Float32Array([xx,yx,zx,0,xy,yy,zy,0,xz,yz,zz,0,-(xx*eye[0]+xy*eye[1]+xz*eye[2]),-(yx*eye[0]+yy*eye[1]+yz*eye[2]),-(zx*eye[0]+zy*eye[1]+zz*eye[2]),1])}
-let verts=[],rotatePlayer=false,viewModel=false;
+let verts=[],rotatePlayer=false,viewModel=false,swordPose=null;
 function cube(x,y,z,w,h,d,hex){let rgb=hex.match(/[\da-f]{2}/gi).map(v=>parseInt(v,16)/255),x0=x-w/2,x1=x+w/2,y0=y,y1=y+h,z0=z-d/2,z1=z+d/2;
 const faces=[
 [[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],.85],
@@ -37,7 +37,7 @@ const faces=[
 [[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0],.62],
 [[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0],1],
 [[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1],.52]];
-for(let face of faces){let tint=face[4];for(let i of [0,1,2,0,2,3]){let a=face[i],xx=a[0],zz=a[2];if(viewModel){let co=Math.cos(p.a||0),si=Math.sin(p.a||0),localX=xx,localZ=zz;xx=p.x+localX*co-localZ*si;zz=p.z+localX*si+localZ*co;a=[xx,2.85+a[1],zz]}else if(rotatePlayer){let dx=xx-p.x,dz=zz-p.z,angle=p.a||0,co=Math.cos(angle),si=Math.sin(angle);xx=p.x+dx*co+dz*si;zz=p.z-dx*si+dz*co}verts.push(xx,a[1],zz,rgb[0]*tint,rgb[1]*tint,rgb[2]*tint)}}}
+for(let face of faces){let tint=face[4];for(let i of [0,1,2,0,2,3]){let a=face[i],xx=a[0],zz=a[2];if(viewModel){let localX=xx,localY=a[1],localZ=zz;if(swordPose){let dx=localX-swordPose.x,dy=localY-swordPose.y,dz=localZ-swordPose.z,tilt=swordPose.tilt,lean=swordPose.lean;let ty=dy*Math.cos(tilt)-dz*Math.sin(tilt),tz=dy*Math.sin(tilt)+dz*Math.cos(tilt);localX=swordPose.x+dx*Math.cos(lean)-ty*Math.sin(lean);localY=swordPose.y+dx*Math.sin(lean)+ty*Math.cos(lean);localZ=swordPose.z+tz}let co=Math.cos(p.a||0),si=Math.sin(p.a||0);xx=p.x+localX*co-localZ*si;zz=p.z+localX*si+localZ*co;a=[xx,2.85+localY,zz]}else if(rotatePlayer){let dx=xx-p.x,dz=zz-p.z,angle=p.a||0,co=Math.cos(angle),si=Math.sin(angle);xx=p.x+dx*co+dz*si;zz=p.z-dx*si+dz*co}verts.push(xx,a[1],zz,rgb[0]*tint,rgb[1]*tint,rgb[2]*tint)}}}
 function humanoid(x,z,color,scale=1){cube(x,0,z,.72*scale,1.2*scale,.5*scale,'#384e66');cube(x,1.1*scale,z,1.25*scale,1.65*scale,.65*scale,color);cube(x,2.75*scale,z,.75*scale,.78*scale,.75*scale,'#d6b59a');cube(x,3.45*scale,z,.85*scale,.25*scale,.9*scale,'#5a4a43')}
 function roof(x,z,w,d){cube(x,5.8,z,w+1.4,.5,d+1.4,'#69433c');cube(x,6.3,z,w+1,1,d+1,'#915b4d');cube(x,7.3,z,w*.65,.7,d*.8,'#a56a54');cube(x,8,z,w*.3,.4,d*.55,'#b77c5d')}
 function render(){if(!gl||!program)return;verts=[];
@@ -70,13 +70,17 @@ verts=[];viewModel=true;
 const swing=slash>0?Math.sin((1-slash/.35)*Math.PI):0;
 const casting=spell>0?Math.sin((1-spell/.7)*Math.PI):0;
 const bob=Math.sin(performance.now()*.012)*Math.min(.035,Math.abs(moveSpeed)*.003);
-const sx=.72-swing*.5,sy=-.85+swing*.43+bob,sz=-1.05-swing*.28;
+// The blade leans diagonally toward the center and points forward.
+// During attacks the whole sword arcs sideways rather than thrusting.
+const sx=.72-swing*.17,sy=-.85+swing*.1+bob,sz=-.96;
 cube(.58,-1.12+bob,-.72,.34,.65,.35,'#52677c');
+swordPose={x:sx,y:sy+.7,z:sz,tilt:-.52-swing*.28,lean:.42+swing*1.25};
 cube(sx,sy,sz,.18,.85,.18,'#c3ccd6');
-cube(sx,sy+.72,sz,.48,.12,.22,'#c9a25d');
-cube(sx,sy+.85,sz,.12,.16,.14,'#654a36');
-cube(sx,sy+1.0,sz,.13,1.05,.13,'#d9e8f2');
-cube(sx,sy+2.05,sz,.08,.18,.08,'#f7f4d8');
+cube(sx,sy+.72,sz,.55,.12,.24,'#c9a25d');
+cube(sx,sy+.86,sz,.13,.18,.15,'#654a36');
+cube(sx,sy+1.03,sz,.15,1.12,.12,'#d9e8f2');
+cube(sx,sy+2.12,sz,.085,.2,.085,'#f7f4d8');
+swordPose=null;
 cube(-.64,-1.06+casting*.47,-.84-casting*.32,.4,.68,.38,'#52677c');
 cube(-.64,-.43+casting*.48,-.93-casting*.34,.3,.29,.28,'#cfa88a');
 if(casting>0){
