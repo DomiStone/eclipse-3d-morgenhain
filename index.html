@@ -38,7 +38,14 @@ let p,npcs,enemies,chests,quest,wolves,bossDead,inventory=[],equippedWeapon='rus
 let worldSeconds=0,guards=[{x:-5.8,z:-28.4,patrol:0,walk:0},{x:5.8,z:-28.4,patrol:0,walk:0}];
 const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),d=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 function note(t){$('msg').textContent=t;msgTime=4}
-function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>120||Math.abs(p.z)>120){p.x=0;p.z=-9}if(!Number.isFinite(p.hp))p.hp=100;if(!Number.isFinite(p.a))p.a=0;quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=Number.isFinite(p.a)?p.a:0;moveSpeed=0;strafeSpeed=0;turnSpeed=0;last=null;gate=0;worldSeconds=0;guards.forEach(g=>{g.patrol=0;g.walk=0;g.attackCooldown=0});enemies=data?.enemies||Array.from({length:13},(_,i)=>{let a=i*.55+2,r=39+(i%3)*6;return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:6,type:'wolf',phase:i}});if(!bossDead&&!enemies.some(e=>e.type==='boss'))enemies.push({x:0,z:-70,hp:36,type:'boss',phase:0});chests=data?.chests||[{x:13,z:-44,open:false},{x:-16,z:-49,open:false}];
+function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>120||Math.abs(p.z)>120){p.x=0;p.z=-9}if(!Number.isFinite(p.hp))p.hp=100;if(!Number.isFinite(p.a))p.a=0;quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=Number.isFinite(p.a)?p.a:0;moveSpeed=0;strafeSpeed=0;turnSpeed=0;last=null;gate=0;worldSeconds=0;guards.forEach(g=>{g.patrol=0;g.walk=0;g.attackCooldown=0});enemies=data?.enemies||Array.from({length:43},(_,i)=>{
+ const a=i*2.39996,r=39+(i%9)*24;
+ const type=i%7===0?'golem':i%5===0?'spider':i%3===0?'skeleton':i%4===0?'slime':'wolf';
+ return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:type==='golem'?20:type==='skeleton'?10:6,type,phase:i}
+ });if(!enemies.some(e=>['spider','skeleton','golem','slime'].includes(e.type))){
+ for(let i=0;i<22;i++){const a=i*2.4,r=75+i*9,type=['spider','skeleton','golem','slime'][i%4];enemies.push({x:Math.sin(a)*r,z:Math.cos(a)*r,hp:type==='golem'?20:9,type,phase:i})}
+ }
+ if(!bossDead&&!enemies.some(e=>e.type==='boss'))enemies.push({x:0,z:-70,hp:36,type:'boss',phase:0});chests=data?.chests||[{x:13,z:-44,open:false},{x:-16,z:-49,open:false}];
  // An accessible starter chest close to the village path.
  if(!chests.some(c=>c.x===7&&c.z===-5))chests.push({x:7,z:-5,open:false});
  chests.forEach(c=>{
@@ -76,9 +83,18 @@ function inventoryUI(){
  }
 }
 function hud(){ $('hud').textContent='❤️ '+Math.ceil(p.hp)+'/100 · ⭐ '+p.level+' · 🪙 '+p.gold+' · 🧪 '+p.potions+' · ⚔️ +'+(p.power+weaponDamage());inventoryUI();$('quest').innerHTML='<strong>'+['📜 Sprich mit Mira','🐺 Besiege 3 Schattenwölfe ('+Math.min(wolves,3)+'/3)','🏰 Berichte Mira','👹 Besiege den Schattenwächter','🏆 Morgenhain ist gerettet!'][quest]+'</strong><br><small>XP '+p.xp+'/'+(p.level*30)+' · '+(quest===0?'Mira steht nördlich des Brunnens.':quest===1?'Verlasse das Dorf durch das südliche Tor.':quest===2?'Kehre zu Mira zurück.':quest===3?'Der Boss wartet weit südlich des Dorfes.':'Erkunde die Wildnis und verbessere deine Ausrüstung.')+'</small>'}
-function collision(x,z){let r=Math.max(Math.abs(x),Math.abs(z));if(r>22.5&&r<33&&!(Math.abs(x)<3.6&&z< -22&&z> -34&&gate>.7))return true;for(let h of houses)if(Math.abs(x-h[0])<h[2]/2+1&&Math.abs(z-h[1])<h[3]/2+1)return true;return Math.hypot(x,z)<3.3}
+function collision(x,z){
+ const r=Math.max(Math.abs(x),Math.abs(z));
+ if(r>22.5&&r<33&&!(Math.abs(x)<3.6&&z< -22&&z> -34&&gate>.7))return true;
+ for(const h of houses)if(Math.abs(x-h[0])<h[2]/2+1&&Math.abs(z-h[1])<h[3]/2+1)return true;
+ if(Math.hypot(x,z)<3.3)return true;
+ // Lakes are impassable, mountains remain visible from a distance.
+ for(const [lx,lz,rx,rz] of [[95,-65,22,17],[-105,92,28,19],[185,105,32,22]])
+  if(((x-lx)/rx)**2+((z-lz)/rz)**2<.85)return true;
+ return Math.abs(x)>460||Math.abs(z)>460;
+}
 function gain(n){p.xp+=n;while(p.xp>=p.level*30){p.xp-=p.level*30;p.level++;p.power++;p.hp=Math.min(100,p.hp+30);note('⭐ Stufenaufstieg! Schwert stärker!')}}
-function kill(i){let e=enemies[i];if(e.type==='boss'){bossDead=true;p.gold+=100;gain(80);if(quest===3)quest=4;note('🏆 Schattenwächter besiegt! +100 Gold')}else{wolves++;p.gold+=12;gain(12);if(quest===1&&wolves>=3){quest=2;note('📜 Quest erfüllt! Kehre zu Mira zurück.')}else note('🐺 Wolf besiegt! +12 Gold, +12 XP')}enemies.splice(i,1);hud();save()}
+function kill(i){let e=enemies[i];if(e.type==='boss'){bossDead=true;p.gold+=100;gain(80);if(quest===3)quest=4;note('🏆 Schattenwächter besiegt! +100 Gold')}else{if(e.type==='wolf')wolves++;const reward=e.type==='golem'?35:e.type==='skeleton'?20:12;p.gold+=reward;gain(e.type==='golem'?28:12);if(quest===1&&wolves>=3){quest=2;note('📜 Quest erfüllt! Kehre zu Mira zurück.')}else note('⚔️ '+({wolf:'Wolf',spider:'Spinne',skeleton:'Skelett',slime:'Schleim',golem:'Golem'}[e.type]||'Monster')+' besiegt! +'+reward+' Gold')}enemies.splice(i,1);hud();save()}
 function attack(){if(slash>0||p.hp<=0)return;slash=.44;let count=0;for(let i=enemies.length-1;i>=0;i--){let e=enemies[i],dd=d(p,e),angle=Math.atan2(e.x-p.x,e.z-p.z),diff=Math.atan2(Math.sin(angle-p.a),Math.cos(angle-p.a));if(dd<(e.type==='boss'?6.2:5.2)&&Math.abs(diff)<1.45){e.hp-=3+p.power+weaponDamage();count++;if(e.hp<=0)kill(i)}}if(!count)note('⚔️ Kein Gegner in Reichweite');else note('⚔️ Treffer!');hud()}
 function magic(){if(spell>0||p.hp<=0)return;spell=.7;let count=0;for(let i=enemies.length-1;i>=0;i--)if(d(p,enemies[i])<9){enemies[i].hp-=4+p.level;count++;if(enemies[i].hp<=0)kill(i)}note(count?'✨ Magie trifft '+count+' Gegner!':'✨ Magiewelle!');hud()}
 function heal(){if(p.hp>=100)return note('❤️ Du bist bereits gesund.');if(p.potions<=0)return note('🧪 Keine Tränke! Besuche Lysa.');p.potions--;p.hp=Math.min(100,p.hp+45);note('🧪 +45 Leben');hud();save()}
@@ -304,6 +320,109 @@ function shadowWolf(e){
  c(0,1.06,.98,.23,.28,.75,'#45404c');
  if(boss){c(0,2.01,-.74,.21,.44,.19,'#c1a4c6');c(0,1.26,-1.26,.40,.20,.17,'#9e657f')}
 }
+function lantern(x,z,post=3.1){
+ const night=clock>=19||clock<7;
+ cube(x,0,z,.24,post,.24,'#514537');
+ cube(x,post,z,.75,.13,.75,'#494a46');
+ cube(x,post+.13,z,.49,.78,.49,night?'#ffdf80':'#ac9a68');
+ for(const side of [-1,1]){
+  cube(x+side*.31,post+.1,z,.09,.9,.1,'#393c3b');
+  cube(x,post+.1,z+side*.31,.1,.9,.09,'#393c3b');
+ }
+ cube(x,post+1.02,z,.8,.16,.8,'#3b4140');
+ if(night){
+  const flicker=.12*Math.sin(worldSeconds*8+x*2+z);
+  cube(x,post+.29,z,.19,.35+flicker,.18,'#fff5bd');
+  // Warm pools of light on the street; no costly dynamic shadow maps.
+  for(let j=0;j<3;j++){
+   const r=2.5+j*1.6;
+   cube(x,-.16+j*.007,z,r,.015,r,j===0?'#d5a95a':j===1?'#a18d54':'#7b8652');
+  }
+ }
+}
+function renderMonster(e){
+ const x=e.x,z=e.z,t=worldSeconds+e.phase,bob=Math.sin(t*3)*.12;
+ if(e.type==='slime'){
+  cube(x,.08+bob,z,1.9,1.35,1.7,'#5cae78');
+  cube(x,.92+bob,z-.87,1.3,.3,.15,'#80dba0');
+  for(const side of [-1,1])cube(x+side*.44,.94+bob,z-.91,.18,.23,.13,'#172e25');
+ }else if(e.type==='skeleton'){
+  cube(x,.5+bob,z,.7,1.7,.47,'#d3d1b7');
+  cube(x,2.2+bob,z,.88,.87,.75,'#e7e0c6');
+  for(const side of [-1,1]){
+   cube(x+side*.25,.0+bob,z,.22,.9,.24,'#c3c2aa');
+   cube(x+side*.55,.85+bob,z,.19,1.0,.2,'#d1cfb5');
+   cube(x+side*.2,2.62+bob,z-.4,.18,.17,.1,'#c94d51');
+  }
+  cube(x,1.5+bob,z-.34,.78,.12,.14,'#837e73');
+ }else if(e.type==='spider'){
+  cube(x,.4+bob,z,1.6,.75,1.7,'#383747');
+  cube(x,1.0+bob,z-.6,1.0,.6,.85,'#514455');
+  for(const side of [-1,1])for(let j=0;j<4;j++){
+   cube(x+side*(1.1+j*.15),.15+bob,z-1+j*.7,.22,.66,.22,'#38313f');
+  }
+  for(const side of [-1,1])cube(x+side*.25,1.24+bob,z-1.05,.19,.19,.1,'#f15a62');
+ }else if(e.type==='golem'){
+  cube(x,.1+bob,z,2.3,2.7,1.5,'#797d78');
+  cube(x,2.85+bob,z,.95,1.0,.95,'#979d93');
+  for(const side of [-1,1]){
+   cube(x+side*1.43,.85+bob,z,.75,1.9,.85,'#676f70');
+   cube(x+side*.63,0,z,.78,1.0,.83,'#666a65');
+   cube(x+side*.25,3.45+bob,z-.51,.15,.2,.12,'#a6e3f4');
+  }
+  cube(x,1.6+bob,z-.8,.85,.18,.12,'#8ad5df');
+ }
+}
+function renderOuterWorld(){
+ // Render only the nearby chunks: large explorable world, modest mobile draw cost.
+ const range=100,cell=14;
+ const villages=[[120,55,'#bd986d'],[-155,-95,'#a5a3b2'],[225,-165,'#ba9972']];
+ for(const [vx,vz,color] of villages){
+  if(Math.hypot(vx-p.x,vz-p.z)>range+30)continue;
+  cube(vx,-.20,vz,45,.15,40,'#8d9b77');
+  cube(vx,-.13,vz,7,.09,45,'#b9a98a');
+  cube(vx,-.12,vz,43,.08,6,'#b9a98a');
+  for(let j=0;j<6;j++){
+   const x=vx+(j%3-1)*13,z=vz+(Math.floor(j/3)*2-1)*12;
+   cube(x,0,z,8,4.4,7,color);
+   cube(x,4.4,z,9,1.0,8,'#80594c');
+   cube(x,5.4,z,6,.7,6,'#6b483d');
+   cube(x,2.2,z-3.56,1.2,2.2,.16,'#533e2e');
+   cube(x-2.3,2.7,z-3.56,1.2,1.1,.16,'#b8c8c4');
+  }
+  for(const [lx,lz] of [[-4,-16],[4,16],[-19,0],[19,0]])lantern(vx+lx,vz+lz);
+  cube(vx,0,vz,3,1.4,3,'#a9ada6');cube(vx,1.4,vz,2.4,.1,2.4,'#65b4ce');
+ }
+ for(const [lx,lz,rx,rz] of [[95,-65,22,17],[-105,92,28,19],[185,105,32,22]]){
+  if(Math.hypot(lx-p.x,lz-p.z)>range+35)continue;
+  cube(lx,-.24,lz,rx*2, .16,rz*2,'#477f9a');
+  for(let k=0;k<7;k++){
+   const a=k*6.283/7;
+   cube(lx+Math.cos(a)*rx*.65,-.07,lz+Math.sin(a)*rz*.65,2.5,.05,1.1,'#79c3d4');
+  }
+ }
+ const gx0=Math.floor((p.x-range)/cell),gx1=Math.ceil((p.x+range)/cell);
+ const gz0=Math.floor((p.z-range)/cell),gz1=Math.ceil((p.z+range)/cell);
+ for(let gx=gx0;gx<=gx1;gx++)for(let gz=gz0;gz<=gz1;gz++){
+  const x=gx*cell,z=gz*cell;
+  if(Math.abs(x)<37&&Math.abs(z)<37)continue;
+  if(villages.some(v=>Math.abs(x-v[0])<29&&Math.abs(z-v[1])<27))continue;
+  if(Math.hypot(x-p.x,z-p.z)>range)continue;
+  const hash=(n)=>{const t=Math.sin(gx*127.1+gz*311.7+n*47.9)*43758.5453;return t-Math.floor(t)};
+  if(hash(1)<.13){
+   const h=8+hash(2)*22;
+   cube(x,-.16,z,10,h*.38,10,'#777d76');
+   cube(x,h*.38-.16,z,7,h*.4,7,'#8c9087');
+   cube(x,h*.78-.16,z,3,h*.22,3,h>21?'#d9dcd6':'#777f79');
+  }else if(hash(3)<.32){
+   const h=4+hash(4)*4;
+   cube(x,0,z,.55,h,.58,'#66513a');
+   cube(x,h-.8,z,3.3,2.5,3.2,hash(5)<.5?'#497748':'#62834b');
+  }else if(hash(6)<.11){
+   cube(x,-.05,z,2.4,.55,2.3,'#8e8b79');
+  }
+ }
+}
 function banner(x,z,shade){
  cube(x,6.7,z,.12,3.0,.16,'#574634');
  cube(x,6.25,z-.14,1.05,2.0,.13,shade);
@@ -388,8 +507,9 @@ const height=Math.max(1,Math.round(bounds.height*pixelRatio));
 if(cv.width!==width||cv.height!==height){cv.width=width;cv.height=height}
 verts=[];
 const night=clock>20||clock<6,sky=night?[.08,.13,.23]:[.50,.70,.83];gl.viewport(0,0,cv.width,cv.height);gl.clearColor(...sky,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-cube(0,-.6,0,250,.4,250,'#6c9a67');
+cube(0,-.6,0,960,.4,960,'#6c9a67');
 cube(0,-.42,0,68,.13,68,'#4784a1');
+renderOuterWorld();
 cube(0,-.25,0,45,.3,45,'#8aa57b');
 cube(0,-.2,-28,8,.4,22,'#b7a58c');for(let z=-18;z<=19;z+=5)cube(0,-.1,z,4,.09,3,'#c7b89a');for(let x=-19;x<=19;x+=5)cube(x,-.1,0,3,.09,4,'#c7b89a');
 for(let i=-21;i<=21;i+=5){
@@ -449,6 +569,7 @@ for(let i=0;i<houses.length;i++){
  }
 }
 villageDetails();
+for(const [lx,lz] of [[-8,-22],[8,-22],[-8,6],[8,6],[-18,5],[18,5],[-8,20],[8,20]])lantern(lx,lz);
 farmCorner();
 cube(0,0,0,5,1.4,5,'#a8aba6');cube(0,1.4,0,4,.15,4,'#55b4d3');
 for(let ripple=0;ripple<3;ripple++){const shift=Math.sin(clock*2+ripple*2.1);cube(-1+ripple*.85,1.49,-.6+ripple*.46,.48+shift*.13,.025,.12,'#a1dce7');}
@@ -570,7 +691,7 @@ for(let i=0;i<npcs.length;i++){
  }
 }
 renderGateGuards();
-for(let e of enemies)shadowWolf(e);
+for(let e of enemies){if(Math.hypot(e.x-p.x,e.z-p.z)>110)continue;if(e.type==='wolf'||e.type==='boss')shadowWolf(e);else renderMonster(e)}
 let px=p.x,pz=p.z;rotatePlayer=true;
 /* First-person camera: the player body must not obstruct the view. */
 /*
