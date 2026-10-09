@@ -41,7 +41,13 @@ function note(t){$('msg').textContent=t;msgTime=4}
 function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>120||Math.abs(p.z)>120){p.x=0;p.z=-9}if(!Number.isFinite(p.hp))p.hp=100;if(!Number.isFinite(p.a))p.a=0;quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=Number.isFinite(p.a)?p.a:0;moveSpeed=0;strafeSpeed=0;turnSpeed=0;last=null;gate=0;worldSeconds=0;guards.forEach(g=>{g.patrol=0;g.walk=0;g.attackCooldown=0});enemies=data?.enemies||Array.from({length:13},(_,i)=>{let a=i*.55+2,r=39+(i%3)*6;return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:6,type:'wolf',phase:i}});if(!bossDead&&!enemies.some(e=>e.type==='boss'))enemies.push({x:0,z:-70,hp:36,type:'boss',phase:0});chests=data?.chests||[{x:13,z:-44,open:false},{x:-16,z:-49,open:false}];
  // An accessible starter chest close to the village path.
  if(!chests.some(c=>c.x===7&&c.z===-5))chests.push({x:7,z:-5,open:false});
- chests.forEach(c=>{if(c.open)c.openProgress=1;else c.openProgress=0});inventory=Array.isArray(data?.inventory)?data.inventory:[];equippedWeapon=data?.equippedWeapon||'rusty';npcs=villagers.map((v,i)=>({facing:0,name:v[0],x:v[1],z:v[2],homeX:v[1],homeZ:v[2],color:v[3],phase:i*1.7,taskStep:0,taskWait:2+i%4,indoors:false,carryingWater:false}));note('🏰 Willkommen in Morgenhain!');hud()}
+ chests.forEach(c=>{
+  // Migrate old saves: previous builds marked chests open without a separate
+  // loot-collection step. Make those chests usable again, preserving progress.
+  if(c.lootClaimed!==true){
+   c.open=false;c.openProgress=0;c.lootClaimed=false;
+  }else{c.open=true;c.openProgress=1}
+ });inventory=Array.isArray(data?.inventory)?data.inventory:[];equippedWeapon=data?.equippedWeapon||'rusty';npcs=villagers.map((v,i)=>({facing:0,name:v[0],x:v[1],z:v[2],homeX:v[1],homeZ:v[2],color:v[3],phase:i*1.7,taskStep:0,taskWait:2+i%4,indoors:false,carryingWater:false}));note('🏰 Willkommen in Morgenhain!');hud()}
 function save(){try{localStorage.setItem('morgenhain-v2',JSON.stringify({p,quest,wolves,bossDead,clock,enemies,chests,inventory,equippedWeapon}))}catch(e){}}
 const weaponCatalog={
  rusty:{name:'Altes Schwert',icon:'⚔️',damage:0},
@@ -77,18 +83,27 @@ function attack(){if(slash>0||p.hp<=0)return;slash=.44;let count=0;for(let i=ene
 function magic(){if(spell>0||p.hp<=0)return;spell=.7;let count=0;for(let i=enemies.length-1;i>=0;i--)if(d(p,enemies[i])<9){enemies[i].hp-=4+p.level;count++;if(enemies[i].hp<=0)kill(i)}note(count?'✨ Magie trifft '+count+' Gegner!':'✨ Magiewelle!');hud()}
 function heal(){if(p.hp>=100)return note('❤️ Du bist bereits gesund.');if(p.potions<=0)return note('🧪 Keine Tränke! Besuche Lysa.');p.potions--;p.hp=Math.min(100,p.hp+45);note('🧪 +45 Leben');hud();save()}
 function openNearbyChest(){
- let nearest=null,index=-1,best=4.5;
+ let nearest=null,index=-1,best=5;
  for(let i=0;i<chests.length;i++){
   const c=chests[i],distance=d(p,c);
-  if(!c.open&&distance<best){nearest=c;index=i;best=distance}
+  if(distance<best){nearest=c;index=i;best=distance}
  }
  if(!nearest)return false;
- nearest.open=true;nearest.openProgress=0;
+ if(nearest.lootClaimed){note('📦 Diese Truhe ist bereits leer.');return true}
+ if(!nearest.open){
+  nearest.open=true;nearest.openProgress=0;
+  note('🔓 Die Truhe öffnet sich! Drücke 🗝️ erneut, um die Beute einzusammeln.');
+  save();return true;
+ }
+ if(nearest.openProgress<.8){
+  note('📦 Der Deckel öffnet sich noch …');return true;
+ }
+ nearest.lootClaimed=true;
  const coins=index===0?45:index===1?65:25;
  p.gold+=coins;p.potions++;
  const weapon=index===0?'steel':index===1?'axe':'steel';
  addLoot(weapon);addLoot(index===1?'relic':'gem');
- note('📦 Truhe! +'+coins+' Gold, Heiltrank und '+weaponCatalog[weapon].name);
+ note('🎒 Eingesammelt: '+coins+' Gold, Heiltrank und '+weaponCatalog[weapon].name+'!');
  hud();save();return true;
 }
 function action(){
@@ -511,7 +526,7 @@ for(let c of chests){
   cube(c.x,y+.13,z,2.3,.08,.24,'#dfb668');
   if(j===0||j===segments-1)cube(c.x,y+.20,z,2.34,.08,.18,'#66533b');
  }
- if(c.open){
+ if(c.open&&!c.lootClaimed){
   for(let k=0;k<6;k++)cube(c.x-.68+(k%3)*.67,.94,c.z-.30+Math.floor(k/3)*.43,.31,.11,.28,'#f4c64d');
   cube(c.x,1.08+Math.sin(worldSeconds*2)*.06,c.z,.36,.28,.32,'#91cbdc');
  }
