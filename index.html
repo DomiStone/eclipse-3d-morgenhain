@@ -113,6 +113,39 @@ function detailedHouse(h,index){
  for(let side of [-1,1])cube(wx+side*.76,3.28,front-.32,.18,1.57,.25,'#76543b');
  cube(wx,3.15,front-.42,1.65,.15,.42,'#99968a');
 }
+function lantern(x,z){
+ cube(x,0,z,.24,3.3,.24,'#493b30');cube(x,3.0,z,.55,.13,.55,'#343839');
+ cube(x,3.13,z,.40,.52,.40,'#e5ae56');cube(x,3.68,z,.64,.16,.64,'#3a3b37');
+ cube(x,3.18,z-.22,.27,.43,.055,'#ffcf75');
+}
+function wildTree(x,z,seed){
+ const tall=4+seed*2;
+ cube(x,0,z,.74,tall,.74,'#65513d');
+ cube(x,1.3,z-.39,.13,2.2,.09,'#8b7050');
+ for(let layer=0;layer<3;layer++){
+  const width=5.3-layer*.9,yy=tall-1.0+layer*1.1;
+  cube(x,yy,z,width,1.75,width,layer===0?'#355e42':layer===1?'#42744c':'#4b8052');
+  cube(x-.65,yy+.2,z-width*.28,width*.34,1.15,.35,'#527c51');
+ }
+}
+function shadowWolf(e){
+ const x=e.x,z=e.z,boss=e.type==='boss',sc=boss?2.3:1;
+ const c=(dx,y,dz,w,h,d,shade)=>cube(x+dx*sc,y*sc,z+dz*sc,w*sc,h*sc,d*sc,shade);
+ c(0,.65,0,1.0,.78,1.65,boss?'#44364f':'#504b52');
+ c(0,1.13,-.66,.83,.75,.77,boss?'#645071':'#6c6670');
+ c(0,1.58,-.79,.72,.32,.57,'#827787');
+ for(let side of [-1,1]){
+  c(side*.36,0,-.56,.27,.72,.32,'#3c3942');
+  c(side*.36,0,.55,.27,.72,.32,'#3c3942');
+  c(side*.31,1.73,-.77,.25,.45,.23,boss?'#a58aa7':'#7c737d');
+  c(side*.22,1.40,-1.09,.16,.14,.11,'#f35a69');
+ }
+ c(0,1.05,-1.13,.47,.31,.45,'#36333c');
+ c(0,1.16,-1.38,.17,.14,.12,'#25242a');
+ c(0,.98,-1.27,.32,.08,.10,'#d5d1bd');
+ c(0,1.06,.98,.23,.28,.75,'#45404c');
+ if(boss){c(0,2.01,-.74,.21,.44,.19,'#c1a4c6');c(0,1.26,-1.26,.40,.20,.17,'#9e657f')}
+}
 function render(){if(!gl||!program)return;
 // Match the WebGL drawing buffer to the actual CSS viewport to avoid stretching.
 const bounds=cv.getBoundingClientRect();
@@ -170,10 +203,21 @@ for(let i=0;i<houses.length;i++)detailedHouse(houses[i],i);
 cube(0,0,0,5,1.4,5,'#a8aba6');cube(0,1.4,0,4,.15,4,'#55b4d3');
 cube(-8,0,14,3,2,3,'#776d62');cube(-8,2,14,3,.3,3,'#de7d40');
 cube(8,0,2,4,2,2,'#95754e');cube(8,2,2,5,.35,3,'#d8b56d');
-for(let x=-110;x<=110;x+=11)for(let z=-110;z<=110;z+=11){let seed=Math.abs(Math.sin(x*12.9898+z*78.233));if(Math.max(Math.abs(x),Math.abs(z))<36||seed<.45)continue;cube(x,0,z,.85,4,.85,'#6c533d');cube(x,3.2,z,4.6,4.2,4.6,seed>.8?'#2c6d4c':'#3e7c52');cube(x,6.2,z,3.4,2.6,3.4,'#4b9360')}
+for(let x=-110;x<=110;x+=11)for(let z=-110;z<=110;z+=11){let seed=Math.abs(Math.sin(x*12.9898+z*78.233));if(Math.max(Math.abs(x),Math.abs(z))<36||seed<.45)continue;wildTree(x,z,seed)}
+// Village atmosphere: warm lanterns, cobblestones, and low roadside shrubs.
+for(let z of [-18,-8,7,17])for(let side of [-1,1])lantern(side*4.6,z);
+for(let i=0;i<46;i++){
+ const z=-20+i*.88,x=Math.sin(i*17.7)*2.9;
+ cube(x,-.075,z,.38,.055,.62,i%3===0?'#9d9887':i%3===1?'#b2a995':'#857f75');
+}
+for(let i=0;i<25;i++){
+ const a=i*2.399,r=34+(i%5)*2.7,x=Math.cos(a)*r,z=Math.sin(a)*r;
+ cube(x,0,z,1.1,.48,1.0,i%2?'#527b4b':'#67854c');
+ cube(x+.35,.23,z-.2,.6,.36,.6,'#3f7046');
+}
 for(let c of chests){cube(c.x,0,c.z,2,1.1,1.4,c.open?'#706254':'#aa7d40');cube(c.x,1.05,c.z,2.2,.25,1.6,c.open?'#807469':'#e5c066')}
 for(let n of npcs)humanoid(n.x,n.z,n.color,['Finn','Mila','Theo','Ida'].includes(n.name)?.72:1);
-for(let e of enemies){let boss=e.type==='boss',h=boss?4.6:1.25,w=boss?3.2:1.6;cube(e.x,0,e.z,w,h,w,boss?'#513d66':'#56505e');cube(e.x,h,e.z,w*.8,boss?1.1:.65,w*.85,boss?'#826394':'#807987');cube(e.x-.4*(boss?2:1),h+.2,e.z-w/2-.08,.3,.3,.2,'#f14963');cube(e.x+.4*(boss?2:1),h+.2,e.z-w/2-.08,.3,.3,.2,'#f14963')}
+for(let e of enemies)shadowWolf(e);
 let px=p.x,pz=p.z;rotatePlayer=true;
 /* First-person camera: the player body must not obstruct the view. */
 /*
