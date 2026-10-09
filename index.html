@@ -42,8 +42,29 @@ function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.
  const a=i*2.39996,r=39+(i%9)*24;
  const type=i%7===0?'golem':i%5===0?'spider':i%3===0?'skeleton':i%4===0?'slime':'wolf';
  return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:type==='golem'?20:type==='skeleton'?10:6,type,phase:i}
- });if(!enemies.some(e=>['spider','skeleton','golem','slime'].includes(e.type))){
- for(let i=0;i<22;i++){const a=i*2.4,r=75+i*9,type=['spider','skeleton','golem','slime'][i%4];enemies.push({x:Math.sin(a)*r,z:Math.cos(a)*r,hp:type==='golem'?20:9,type,phase:i})}
+ });// Preserve old saves, but populate the newly expanded world with nearby wildlife.
+ // Earlier builds spawned new monsters far beyond the village, making the world seem empty.
+ const species=['wolf','spider','skeleton','slime','golem'];
+ const spawnSites=[
+  [-9,-40,'wolf'],[9,-43,'wolf'],[-18,-48,'spider'],[17,-51,'skeleton'],
+  [0,-57,'slime'],[-30,-60,'golem'],[36,-39,'wolf'],[-40,4,'spider'],
+  [41,15,'skeleton'],[-47,37,'slime'],[52,55,'golem'],
+  [84,35,'wolf'],[-90,-48,'spider'],[125,85,'skeleton'],
+  [-160,-115,'slime'],[220,-180,'golem']
+ ];
+ for(let i=0;i<spawnSites.length;i++){
+  const [x,z,type]=spawnSites[i];
+  if(!enemies.some(e=>e.type===type&&Math.hypot(e.x-x,e.z-z)<16))
+   enemies.push({x,z,type,hp:type==='golem'?20:type==='skeleton'?10:6,phase:i});
+ }
+ // Do not fill an old save with distant-only monsters.
+ if(!enemies.some(e=>species.includes(e.type)&&Math.hypot(e.x-p.x,e.z-p.z)<90)){
+  for(let i=0;i<7;i++){
+   const a=i*2.399+Math.PI/3,r=38+i*5,x=p.x+Math.cos(a)*r,z=p.z+Math.sin(a)*r;
+   if(Math.abs(x)<23&&Math.abs(z)<23)continue;
+   const type=species[i%species.length];
+   enemies.push({x,z,type,hp:type==='golem'?20:8,phase:i});
+  }
  }
  if(!bossDead&&!enemies.some(e=>e.type==='boss'))enemies.push({x:0,z:-70,hp:36,type:'boss',phase:0});chests=data?.chests||[{x:13,z:-44,open:false},{x:-16,z:-49,open:false}];
  // An accessible starter chest close to the village path.
