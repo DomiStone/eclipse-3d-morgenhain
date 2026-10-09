@@ -31,7 +31,7 @@ const houses=[[-13,-12,9,8], [13,-12,10,8],[-13,11,10,9],[13,11,9,9],[0,17,10,8]
 let p,npcs,enemies,chests,quest,wolves,bossDead;
 const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),d=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 function note(t){$('msg').textContent=t;msgTime=4}
-function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>120||Math.abs(p.z)>120){p.x=0;p.z=-9}if(!Number.isFinite(p.hp))p.hp=100;if(!Number.isFinite(p.a))p.a=0;quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=Number.isFinite(p.a)?p.a:0;moveSpeed=0;strafeSpeed=0;turnSpeed=0;last=null;gate=0;enemies=data?.enemies||Array.from({length:13},(_,i)=>{let a=i*.55+2,r=39+(i%3)*6;return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:6,type:'wolf',phase:i}});if(!bossDead&&!enemies.some(e=>e.type==='boss'))enemies.push({x:0,z:-70,hp:36,type:'boss',phase:0});chests=data?.chests||[{x:13,z:-44,open:false},{x:-16,z:-49,open:false}];npcs=villagers.map((v,i)=>({name:v[0],x:v[1],z:v[2],homeX:v[1],homeZ:v[2],color:v[3],phase:i*1.7}));note('🏰 Willkommen in Morgenhain!');hud()}
+function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>120||Math.abs(p.z)>120){p.x=0;p.z=-9}if(!Number.isFinite(p.hp))p.hp=100;if(!Number.isFinite(p.a))p.a=0;quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=Number.isFinite(p.a)?p.a:0;moveSpeed=0;strafeSpeed=0;turnSpeed=0;last=null;gate=0;enemies=data?.enemies||Array.from({length:13},(_,i)=>{let a=i*.55+2,r=39+(i%3)*6;return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:6,type:'wolf',phase:i}});if(!bossDead&&!enemies.some(e=>e.type==='boss'))enemies.push({x:0,z:-70,hp:36,type:'boss',phase:0});chests=data?.chests||[{x:13,z:-44,open:false},{x:-16,z:-49,open:false}];npcs=villagers.map((v,i)=>({name:v[0],x:v[1],z:v[2],homeX:v[1],homeZ:v[2],color:v[3],phase:i*1.7,taskStep:0,taskWait:2+i%4,indoors:false,carryingWater:false}));note('🏰 Willkommen in Morgenhain!');hud()}
 function save(){try{localStorage.setItem('morgenhain-v2',JSON.stringify({p,quest,wolves,bossDead,clock,enemies,chests}))}catch(e){}}
 function hud(){ $('hud').textContent='❤️ '+Math.ceil(p.hp)+'/100 · ⭐ '+p.level+' · 🪙 '+p.gold+' · 🧪 '+p.potions+' · ⚔️ +'+p.power;$('quest').innerHTML='<strong>'+['📜 Sprich mit Mira','🐺 Besiege 3 Schattenwölfe ('+Math.min(wolves,3)+'/3)','🏰 Berichte Mira','👹 Besiege den Schattenwächter','🏆 Morgenhain ist gerettet!'][quest]+'</strong><br><small>XP '+p.xp+'/'+(p.level*30)+' · '+(quest===0?'Mira steht nördlich des Brunnens.':quest===1?'Verlasse das Dorf durch das südliche Tor.':quest===2?'Kehre zu Mira zurück.':quest===3?'Der Boss wartet weit südlich des Dorfes.':'Erkunde die Wildnis und verbessere deine Ausrüstung.')+'</small>'}
 function collision(x,z){let r=Math.max(Math.abs(x),Math.abs(z));if(r>22.5&&r<33&&!(Math.abs(x)<3.6&&z< -22&&z> -34&&gate>.7))return true;for(let h of houses)if(Math.abs(x-h[0])<h[2]/2+1&&Math.abs(z-h[1])<h[3]/2+1)return true;return Math.hypot(x,z)<3.3}
@@ -40,7 +40,7 @@ function kill(i){let e=enemies[i];if(e.type==='boss'){bossDead=true;p.gold+=100;
 function attack(){if(slash>0||p.hp<=0)return;slash=.44;let count=0;for(let i=enemies.length-1;i>=0;i--){let e=enemies[i],dd=d(p,e),angle=Math.atan2(e.x-p.x,e.z-p.z),diff=Math.atan2(Math.sin(angle-p.a),Math.cos(angle-p.a));if(dd<(e.type==='boss'?6.2:5.2)&&Math.abs(diff)<1.45){e.hp-=3+p.power;count++;if(e.hp<=0)kill(i)}}if(!count)note('⚔️ Kein Gegner in Reichweite');else note('⚔️ Treffer!');hud()}
 function magic(){if(spell>0||p.hp<=0)return;spell=.7;let count=0;for(let i=enemies.length-1;i>=0;i--)if(d(p,enemies[i])<9){enemies[i].hp-=4+p.level;count++;if(enemies[i].hp<=0)kill(i)}note(count?'✨ Magie trifft '+count+' Gegner!':'✨ Magiewelle!');hud()}
 function heal(){if(p.hp>=100)return note('❤️ Du bist bereits gesund.');if(p.potions<=0)return note('🧪 Keine Tränke! Besuche Lysa.');p.potions--;p.hp=Math.min(100,p.hp+45);note('🧪 +45 Leben');hud();save()}
-function talk(){for(let c of chests)if(!c.open&&d(p,c)<4){c.open=true;p.gold+=30;p.potions++;note('📦 Truhe: +30 Gold und Heiltrank!');hud();save();return}if(Math.hypot(p.x,p.z)<4.6){p.hp=100;note('💧 Brunnen heilt dich vollständig!');hud();return}let n=npcs.filter(n=>d(n,p)<5.5).sort((a,b)=>d(a,p)-d(b,p))[0];if(!n)return note('💬 Geh näher zu einer Person.');if(n.name==='Mira'){if(quest===0){quest=1;note('📜 Mira: Besiege drei Schattenwölfe!')}else if(quest===2){quest=3;p.gold+=40;p.potions+=2;note('📜 Mira: Besiege den Schattenwächter! +40 Gold, +2 Tränke')}else note('💬 Mira: Beschütze Morgenhain!')}else if(n.name==='Borin'){if(p.gold>=25){p.gold-=25;p.power++;note('🔨 Schwert verbessert!')}else note('🔨 Verbesserung kostet 25 Gold')}else if(n.name==='Lysa'){if(p.gold>=12){p.gold-=12;p.potions++;note('🧪 Trank gekauft!')}else note('🛒 Heiltrank kostet 12 Gold')}else note('💬 '+n.name+': Sei gegrüßt, Held!');hud();save()}
+function talk(){for(let c of chests)if(!c.open&&d(p,c)<4){c.open=true;p.gold+=30;p.potions++;note('📦 Truhe: +30 Gold und Heiltrank!');hud();save();return}if(Math.hypot(p.x,p.z)<4.6){p.hp=100;note('💧 Brunnen heilt dich vollständig!');hud();return}let n=npcs.filter(n=>!n.indoors&&d(n,p)<5.5).sort((a,b)=>d(a,p)-d(b,p))[0];if(!n)return note('💬 Geh näher zu einer Person.');if(n.name==='Mira'){if(quest===0){quest=1;note('📜 Mira: Besiege drei Schattenwölfe!')}else if(quest===2){quest=3;p.gold+=40;p.potions+=2;note('📜 Mira: Besiege den Schattenwächter! +40 Gold, +2 Tränke')}else note('💬 Mira: Beschütze Morgenhain!')}else if(n.name==='Borin'){if(p.gold>=25){p.gold-=25;p.power++;note('🔨 Schwert verbessert!')}else note('🔨 Verbesserung kostet 25 Gold')}else if(n.name==='Lysa'){if(p.gold>=12){p.gold-=12;p.potions++;note('🧪 Trank gekauft!')}else note('🛒 Heiltrank kostet 12 Gold')}else note('💬 '+n.name+': Sei gegrüßt, Held!');hud();save()}
 
 const vert=`attribute vec3 position;attribute vec3 color;uniform mat4 projection;uniform mat4 view;varying vec3 vColor;void main(){gl_Position=projection*view*vec4(position,1.);vColor=color;}`;
 const frag=`precision mediump float;varying vec3 vColor;uniform float light;void main(){gl_FragColor=vec4(vColor*light,1.);}`;
@@ -408,8 +408,15 @@ for(let i=0;i<25;i++){
 for(let c of chests){cube(c.x,0,c.z,2,1.1,1.4,c.open?'#706254':'#aa7d40');cube(c.x,1.05,c.z,2.2,.25,1.6,c.open?'#807469':'#e5c066')}
 for(let i=0;i<npcs.length;i++){
  const n=npcs[i],child=['Finn','Mila','Theo','Ida'].includes(n.name),scale=child?.72:1;
+ if(n.indoors)continue;
  const gait=n.idle?0:Math.sin(n.walk||0),sway=n.idle?0:Math.cos(n.walk||0);
  humanoid(n.x,n.z,n.color,scale);
+ // Water bucket visibly carried home after filling at the well.
+ if(n.carryingWater){
+  cube(x+.73*scale,.68*scale,z,.42*scale,.46*scale,.40*scale,'#7a5738');
+  cube(x+.73*scale,1.12*scale,z,.47*scale,.09*scale,.44*scale,'#a3d0d4');
+  cube(x+.73*scale,1.31*scale,z,.12*scale,.31*scale,.12*scale,'#b9a27a');
+ }
  // Personal accessories and different walking silhouettes.
  const x=n.x,z=n.z;
  if(i%4===0){cube(x,3.47*scale,z,.92*scale,.17*scale,.91*scale,'#67503a');cube(x,3.54*scale,z,.45*scale,.24*scale,.47*scale,'#6b5239')}
@@ -484,31 +491,48 @@ if(!collision(p.x,p.z+vz))p.z+=vz;
 if(Math.abs(camAxis)>.12){const turn=Math.sign(camAxis)*(Math.abs(camAxis)-.12)/.88;p.a+=turn*dt*1.65;p.a=Math.atan2(Math.sin(p.a),Math.cos(p.a));}
 cam=p.a;
 slash=Math.max(0,slash-dt);spell=Math.max(0,spell-dt);hitDelay=Math.max(0,hitDelay-dt);msgTime-=dt;
-// Each villager has a distinct routine, pace, walking direction and idle pauses.
+// Daily schedules: named quest/trade NPCs stay reachable; residents fetch water,
+// pause at the well, carry it home, and spend time inside their houses.
 for(let i=0;i<npcs.length;i++){
- const n=npcs[i],t=n.phase+dt;
- n.phase=t;
- const style=i%5,pace=[.30,.46,.22,.57,.38][style]*(1+(i%3)*.12);
- const radius=[1.4,2.9,1.1,3.3,2.2][style];
- const angle=t*pace+i*1.618;
- let tx=n.homeX,tz=n.homeZ;
- if(style===0){tx+=Math.sin(angle)*radius;tz+=Math.sin(angle*.47)*1.3}
- else if(style===1){tx+=Math.cos(angle)*radius;tz+=Math.sin(angle)*radius*.64}
- else if(style===2){tx+=Math.sin(angle*.63)*.75;tz+=Math.cos(angle*.52)*radius}
- else if(style===3){tx+=Math.sin(angle)*radius*.85;tz+=Math.sin(angle*1.7)*1.4}
- else{tx+=Math.cos(angle*.8)*radius;tz+=Math.sin(angle*.55)*radius}
- const resting=(style===2&&Math.sin(t*.45+i)> .45)||(style===4&&Math.sin(t*.29+i)<-.55);
- const speed=resting?0:[.65,1.05,.45,1.2,.8][style];
- if(!collision(tx,tz)&&speed>0){
-  const dx=tx-n.x,dz=tz-n.z,dist=Math.hypot(dx,dz);
-  if(dist>.035){
-   const step=Math.min(dist,dt*speed);
-   n.x+=dx/dist*step;n.z+=dz/dist*step;
-   n.facing=Math.atan2(-dx,-dz);
-   n.walk=(n.walk||0)+step*(style===3?8:style===2?4:6);
-  }
+ const n=npcs[i];
+ n.phase+=dt;
+ if(i<5){n.idle=true;continue}
+ const house=houses[(i-5)%4],hx=house[0],doorZ=house[1]-house[3]/2-.95;
+ const side=hx<0?-1:1;
+ const wellX=side*4.9;
+ // Routes follow open streets, never through solid houses.
+ const waypoints=[
+  {x:side*7,z:n.homeZ<0?-2:3},
+  {x:wellX,z:side<0?-.4:.4},
+  {x:wellX,z:side<0?-.4:.4},
+  {x:side*7,z:3},
+  {x:hx,z:doorZ-1.1},
+  {x:hx,z:doorZ},
+  {x:hx,z:doorZ},
+  {x:hx,z:doorZ-1.1},
+  {x:side*7,z:3},
+  {x:n.homeX,z:n.homeZ}
+ ];
+ if(n.taskWait>0){
+  n.taskWait-=dt;n.idle=true;
+  if(n.taskWait>0)continue;
+  if(n.taskStep===2)n.carryingWater=true;
+  if(n.taskStep===6){n.indoors=false;n.carryingWater=false}
  }
- n.idle=resting;
+ const target=waypoints[n.taskStep],dx=target.x-n.x,dz=target.z-n.z,dist=Math.hypot(dx,dz);
+ if(dist>.12){
+  const speed=.8+(i%4)*.14,step=Math.min(dist,dt*speed);
+  n.x+=dx/dist*step;n.z+=dz/dist*step;
+  n.facing=Math.atan2(-dx,-dz);n.walk=(n.walk||0)+step*6;
+  n.idle=false;
+ }else{
+  n.x=target.x;n.z=target.z;
+  if(n.taskStep===2)n.taskWait=4+(i%3); // Filling a bucket at the well.
+  if(n.taskStep===6){n.indoors=true;n.taskWait=12+(i%5)*4}
+  if(n.taskStep===9)n.taskWait=5+(i%4)*3;
+  n.taskStep=(n.taskStep+1)%waypoints.length;
+  n.idle=true;
+ }
 }
 for(let e of enemies){e.phase+=dt;let dd=d(p,e);if(dd<18&&dd>2.2&&p.hp>0){let nx=e.x+(p.x-e.x)/dd*dt*(e.type==='boss'?1.2:2),nz=e.z+(p.z-e.z)/dd*dt*(e.type==='boss'?1.2:2);if(Math.max(Math.abs(nx),Math.abs(nz))>34){e.x=nx;e.z=nz}}if(dd<(e.type==='boss'?3.3:2.1)&&hitDelay<=0&&p.hp>0){p.hp=Math.max(0,p.hp-(e.type==='boss'?20:9));hitDelay=1.1;note(p.hp?'💥 Monsterangriff!':'💀 Du bist besiegt. Drücke Neustart.');hud()}}
 if(msgTime<=0)$('msg').textContent=clock>20||clock<6?'🌙 Nacht in Morgenhain':'☀️ Morgenhain – '+enemies.length+' Gegner';render();requestAnimationFrame(update)}catch(err){console.error('Spiel-Fehler',err);$('msg').textContent='Spiel-Fehler: '+err.message;requestAnimationFrame(update)}}
