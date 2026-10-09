@@ -65,7 +65,7 @@ let fx=Math.sin(cam),fz=-Math.cos(cam),eye=[px-fx*14,10,pz-fz*14],target=[px+fx*
 function update(ms){try{let dt=Math.min((ms-last)/1000||.016,.05);last=ms;clock=(clock+dt*.15)%24;manualCam=Math.max(0,manualCam-dt);let ix=joy.x+(keys.d?1:0)-(keys.a?1:0),iy=joy.y+(keys.s?1:0)-(keys.w?1:0),mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1}gate=clamp(gate+((Math.abs(p.x)<9&&Math.abs(p.z+25)<17)?1:-1)*dt*3.5,0,1);// Smooth character motion: dead zones, acceleration, braking and turn inertia.
 const deadZone=.14;
 const axis=v=>Math.abs(v)<=deadZone?0:Math.sign(v)*(Math.abs(v)-deadZone)/(1-deadZone);
-let horizontal=p.hp>0?axis(ix):0,vertical=p.hp>0?-axis(iy):0;
+let horizontal=p.hp>0?axis(ix):0,vertical=p.hp>0?(iy>0.08?-(iy-.08)/.92:-axis(iy)):0;
 let targetTurn=-horizontal*1.35;
 let turnBlend=1-Math.exp(-dt*10);
 turnSpeed+=(targetTurn-turnSpeed)*turnBlend;
@@ -77,8 +77,7 @@ moveSpeed+=(targetSpeed-moveSpeed)*(1-Math.exp(-dt*accel));
 if(Math.abs(moveSpeed)<.035&&vertical===0)moveSpeed=0;
 let step=moveSpeed*dt;
 let vx=Math.sin(p.a)*step,vz=-Math.cos(p.a)*step;
-if(!collision(p.x+vx,p.z))p.x+=vx;else moveSpeed=0;
-if(!collision(p.x,p.z+vz))p.z+=vz;else moveSpeed=0;
+let moved=false;if(!collision(p.x+vx,p.z)){p.x+=vx;moved=true}if(!collision(p.x,p.z+vz)){p.z+=vz;moved=true}if(!moved&&Math.abs(step)>.001)moveSpeed=0;
 if(manualCam<=0){
   let cameraDelta=Math.atan2(Math.sin(p.a-cam),Math.cos(p.a-cam));
   cam+=cameraDelta*Math.min(1,dt*5);
