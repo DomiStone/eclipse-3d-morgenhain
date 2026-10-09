@@ -16,7 +16,7 @@ function hud(){ $('hud').textContent='❤️ '+Math.ceil(p.hp)+'/100 · ⭐ '+p.
 function collision(x,z){let r=Math.max(Math.abs(x),Math.abs(z));if(r>22.5&&r<33&&!(Math.abs(x)<3.6&&z< -22&&z> -34&&gate>.7))return true;for(let h of houses)if(Math.abs(x-h[0])<h[2]/2+1&&Math.abs(z-h[1])<h[3]/2+1)return true;return Math.hypot(x,z)<3.3}
 function gain(n){p.xp+=n;while(p.xp>=p.level*30){p.xp-=p.level*30;p.level++;p.power++;p.hp=Math.min(100,p.hp+30);note('⭐ Stufenaufstieg! Schwert stärker!')}}
 function kill(i){let e=enemies[i];if(e.type==='boss'){bossDead=true;p.gold+=100;gain(80);if(quest===3)quest=4;note('🏆 Schattenwächter besiegt! +100 Gold')}else{wolves++;p.gold+=12;gain(12);if(quest===1&&wolves>=3){quest=2;note('📜 Quest erfüllt! Kehre zu Mira zurück.')}else note('🐺 Wolf besiegt! +12 Gold, +12 XP')}enemies.splice(i,1);hud();save()}
-function attack(){if(slash>0||p.hp<=0)return;slash=.35;let count=0;for(let i=enemies.length-1;i>=0;i--){let e=enemies[i],dd=d(p,e),angle=Math.atan2(e.x-p.x,e.z-p.z),diff=Math.atan2(Math.sin(angle-p.a),Math.cos(angle-p.a));if(dd<(e.type==='boss'?6.2:5.2)&&Math.abs(diff)<1.45){e.hp-=3+p.power;count++;if(e.hp<=0)kill(i)}}if(!count)note('⚔️ Kein Gegner in Reichweite');else note('⚔️ Treffer!');hud()}
+function attack(){if(slash>0||p.hp<=0)return;slash=.48;let count=0;for(let i=enemies.length-1;i>=0;i--){let e=enemies[i],dd=d(p,e),angle=Math.atan2(e.x-p.x,e.z-p.z),diff=Math.atan2(Math.sin(angle-p.a),Math.cos(angle-p.a));if(dd<(e.type==='boss'?6.2:5.2)&&Math.abs(diff)<1.45){e.hp-=3+p.power;count++;if(e.hp<=0)kill(i)}}if(!count)note('⚔️ Kein Gegner in Reichweite');else note('⚔️ Treffer!');hud()}
 function magic(){if(spell>0||p.hp<=0)return;spell=.7;let count=0;for(let i=enemies.length-1;i>=0;i--)if(d(p,enemies[i])<9){enemies[i].hp-=4+p.level;count++;if(enemies[i].hp<=0)kill(i)}note(count?'✨ Magie trifft '+count+' Gegner!':'✨ Magiewelle!');hud()}
 function heal(){if(p.hp>=100)return note('❤️ Du bist bereits gesund.');if(p.potions<=0)return note('🧪 Keine Tränke! Besuche Lysa.');p.potions--;p.hp=Math.min(100,p.hp+45);note('🧪 +45 Leben');hud();save()}
 function talk(){for(let c of chests)if(!c.open&&d(p,c)<4){c.open=true;p.gold+=30;p.potions++;note('📦 Truhe: +30 Gold und Heiltrank!');hud();save();return}if(Math.hypot(p.x,p.z)<4.6){p.hp=100;note('💧 Brunnen heilt dich vollständig!');hud();return}let n=npcs.filter(n=>d(n,p)<5.5).sort((a,b)=>d(a,p)-d(b,p))[0];if(!n)return note('💬 Geh näher zu einer Person.');if(n.name==='Mira'){if(quest===0){quest=1;note('📜 Mira: Besiege drei Schattenwölfe!')}else if(quest===2){quest=3;p.gold+=40;p.potions+=2;note('📜 Mira: Besiege den Schattenwächter! +40 Gold, +2 Tränke')}else note('💬 Mira: Beschütze Morgenhain!')}else if(n.name==='Borin'){if(p.gold>=25){p.gold-=25;p.power++;note('🔨 Schwert verbessert!')}else note('🔨 Verbesserung kostet 25 Gold')}else if(n.name==='Lysa'){if(p.gold>=12){p.gold-=12;p.potions++;note('🧪 Trank gekauft!')}else note('🛒 Heiltrank kostet 12 Gold')}else note('💬 '+n.name+': Sei gegrüßt, Held!');hud();save()}
@@ -67,19 +67,30 @@ gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32A
 let fx=Math.sin(p.a),fz=-Math.cos(p.a),eye=[px,2.85,pz],target=[px+fx*12,2.85,pz+fz*12];gl.uniformMatrix4fv(loc.proj,false,perspective(Math.PI/3,cv.width/cv.height,.1,350));gl.uniformMatrix4fv(loc.view,false,lookAt(eye,target));gl.uniform1f(loc.light,night?.58:1);gl.drawArrays(gl.TRIANGLES,0,verts.length/6);
 // Draw the weapon and casting hand as a first-person overlay with its own depth.
 verts=[];viewModel=true;
-const swing=slash>0?Math.sin((1-slash/.35)*Math.PI):0;
+const attack=slash>0?Math.max(0,Math.min(1,1-slash/.48)):0;
 const casting=spell>0?Math.sin((1-spell/.7)*Math.PI):0;
 const bob=Math.sin(performance.now()*.012)*Math.min(.035,Math.abs(moveSpeed)*.003);
-// The blade leans diagonally toward the center and points forward.
-// During attacks the whole sword arcs sideways rather than thrusting.
-const sx=.72-swing*.17,sy=-.85+swing*.1+bob,sz=-.96;
-cube(.58,-1.12+bob,-.72,.34,.65,.35,'#52677c');
-swordPose={x:sx,y:sy+.7,z:sz,tilt:-.52-swing*.28,lean:.42+swing*1.25};
-cube(sx,sy,sz,.18,.85,.18,'#c3ccd6');
-cube(sx,sy+.72,sz,.55,.12,.24,'#c9a25d');
-cube(sx,sy+.86,sz,.13,.18,.15,'#654a36');
-cube(sx,sy+1.03,sz,.15,1.12,.12,'#d9e8f2');
-cube(sx,sy+2.12,sz,.085,.2,.085,'#f7f4d8');
+const smooth=t=>t*t*(3-2*t);
+let windup=attack>0&&attack<.25?smooth(attack/.25):attack>=.25?1:0;
+let strike=attack>.25&&attack<.68?smooth((attack-.25)/.43):attack>=.68?1:0;
+let recover=attack>.68?smooth((attack-.68)/.32):0;
+let action=attack>0?1-recover:0;
+// Guard: hilt low right, blade diagonal across the view. Wind up high right,
+// cut down toward the left, then settle back into guard.
+const sx=.74+.25*windup-.95*strike+.70*recover;
+const sy=-.83+.28*windup-.40*strike+.12*recover+bob;
+const sz=-.92+.12*windup-.28*strike+.16*recover;
+const lean=.58-.48*windup+1.48*strike-1.58*recover;
+const tilt=-.65-.30*windup+.42*strike-.12*recover;
+cube(sx-.09,sy-.35,sz+.12,.37,.72,.37,'#52677c');
+swordPose={x:sx,y:sy+.35,z:sz,tilt,lean};
+cube(sx,sy-.24,sz,.19,.48,.19,'#735239');
+cube(sx,sy+.10,sz,.18,.27,.18,'#c2b6a0');
+cube(sx,sy+.33,sz,.62,.12,.22,'#c7a357');
+cube(sx,sy+.43,sz,.12,.12,.15,'#8e743e');
+cube(sx,sy+.53,sz,.19,1.16,.105,'#aabcc9');
+cube(sx-.045,sy+.57,sz-.065,.065,1.08,.035,'#f1f5f6');
+cube(sx,sy+1.66,sz,.14,.22,.10,'#d8e7ef');
 swordPose=null;
 cube(-.64,-1.06+casting*.47,-.84-casting*.32,.4,.68,.38,'#52677c');
 cube(-.64,-.43+casting*.48,-.93-casting*.34,.3,.29,.28,'#cfa88a');
