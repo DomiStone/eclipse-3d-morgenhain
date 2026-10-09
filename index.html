@@ -13,7 +13,7 @@ function note(t){$('msg').textContent=t;msgTime=4}
 function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=0;gate=0;enemies=data?.enemies||Array.from({length:13},(_,i)=>{let a=i*.55+2,r=39+(i%3)*6;return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:6,type:'wolf',phase:i}});if(!bossDead&&!enemies.some(e=>e.type==='boss'))enemies.push({x:0,z:-70,hp:36,type:'boss',phase:0});chests=data?.chests||[{x:13,z:-44,open:false},{x:-16,z:-49,open:false}];npcs=villagers.map((v,i)=>({name:v[0],x:v[1],z:v[2],homeX:v[1],homeZ:v[2],color:v[3],phase:i*1.7}));note('🏰 Willkommen in Morgenhain!');hud()}
 function save(){try{localStorage.setItem('morgenhain-v2',JSON.stringify({p,quest,wolves,bossDead,clock,enemies,chests}))}catch(e){}}
 function hud(){ $('hud').textContent='❤️ '+Math.ceil(p.hp)+'/100 · ⭐ '+p.level+' · 🪙 '+p.gold+' · 🧪 '+p.potions+' · ⚔️ +'+p.power;$('quest').innerHTML='<strong>'+['📜 Sprich mit Mira','🐺 Besiege 3 Schattenwölfe ('+Math.min(wolves,3)+'/3)','🏰 Berichte Mira','👹 Besiege den Schattenwächter','🏆 Morgenhain ist gerettet!'][quest]+'</strong><br><small>XP '+p.xp+'/'+(p.level*30)+' · '+(quest===0?'Mira steht nördlich des Brunnens.':quest===1?'Verlasse das Dorf durch das südliche Tor.':quest===2?'Kehre zu Mira zurück.':quest===3?'Der Boss wartet weit südlich des Dorfes.':'Erkunde die Wildnis und verbessere deine Ausrüstung.')+'</small>'}
-function collision(x,z){let r=Math.max(Math.abs(x),Math.abs(z));if(r>22.5&&r<33&&!(Math.abs(x)<3.8&&z< -22&&z> -34&&gate>.55))return true;for(let h of houses)if(Math.abs(x-h[0])<h[2]/2+1&&Math.abs(z-h[1])<h[3]/2+1)return true;return Math.hypot(x,z)<3.3}
+function collision(x,z){let r=Math.max(Math.abs(x),Math.abs(z));if(r>22.5&&r<33&&!(Math.abs(x)<3.6&&z< -22&&z> -34&&gate>.7))return true;for(let h of houses)if(Math.abs(x-h[0])<h[2]/2+1&&Math.abs(z-h[1])<h[3]/2+1)return true;return Math.hypot(x,z)<3.3}
 function gain(n){p.xp+=n;while(p.xp>=p.level*30){p.xp-=p.level*30;p.level++;p.power++;p.hp=Math.min(100,p.hp+30);note('⭐ Stufenaufstieg! Schwert stärker!')}}
 function kill(i){let e=enemies[i];if(e.type==='boss'){bossDead=true;p.gold+=100;gain(80);if(quest===3)quest=4;note('🏆 Schattenwächter besiegt! +100 Gold')}else{wolves++;p.gold+=12;gain(12);if(quest===1&&wolves>=3){quest=2;note('📜 Quest erfüllt! Kehre zu Mira zurück.')}else note('🐺 Wolf besiegt! +12 Gold, +12 XP')}enemies.splice(i,1);hud();save()}
 function attack(){if(slash>0||p.hp<=0)return;slash=.35;let count=0;for(let i=enemies.length-1;i>=0;i--){let e=enemies[i],dd=d(p,e),angle=Math.atan2(e.x-p.x,e.z-p.z),diff=Math.atan2(Math.sin(angle-p.a),Math.cos(angle-p.a));if(dd<(e.type==='boss'?6.2:5.2)&&Math.abs(diff)<1.45){e.hp-=3+p.power;count++;if(e.hp<=0)kill(i)}}if(!count)note('⚔️ Kein Gegner in Reichweite');else note('⚔️ Treffer!');hud()}
@@ -28,9 +28,8 @@ function shader(type,src){let sh=gl.createShader(type);gl.shaderSource(sh,src);g
 if(gl){try{program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vert));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,frag));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));gl.useProgram(program);buffer=gl.createBuffer();loc.pos=gl.getAttribLocation(program,'position');loc.col=gl.getAttribLocation(program,'color');loc.proj=gl.getUniformLocation(program,'projection');loc.view=gl.getUniformLocation(program,'view');loc.light=gl.getUniformLocation(program,'light');gl.enable(gl.DEPTH_TEST)}catch(e){console.error(e);$('msg').textContent='WebGL konnte nicht gestartet werden: '+e.message;gl=null}}
 function perspective(fov,aspect,near,far){let f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0])}
 function lookAt(eye,target){let zx=eye[0]-target[0],zy=eye[1]-target[1],zz=eye[2]-target[2],len=Math.hypot(zx,zy,zz)||1;zx/=len;zy/=len;zz/=len;let xx=zz,xz=-zx,xy=0;len=Math.hypot(xx,xz)||1;xx/=len;xz/=len;let yx=zy*xz-zz*xy,yy=zz*xx-zx*xz,yz=zx*xy-zy*xx;return new Float32Array([xx,yx,zx,0,xy,yy,zy,0,xz,yz,zz,0,-(xx*eye[0]+xy*eye[1]+xz*eye[2]),-(yx*eye[0]+yy*eye[1]+yz*eye[2]),-(zx*eye[0]+zy*eye[1]+zz*eye[2]),1])}
-let verts=[],actorRotation=false;
+let verts=[];
 function cube(x,y,z,w,h,d,hex){let rgb=hex.match(/[\da-f]{2}/gi).map(v=>parseInt(v,16)/255),x0=x-w/2,x1=x+w/2,y0=y,y1=y+h,z0=z-d/2,z1=z+d/2;
-if(actorRotation){let a=p.a||0,co=Math.cos(a),si=Math.sin(a);let rot=v=>{let dx=v[0]-p.x,dz=v[2]-p.z;return [p.x+dx*co+dz*si,v[1],p.z-dx*si+dz*co]};/* vertices transformed when written below */}
 const faces=[
 [[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],.85],
 [[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0],.67],
@@ -38,7 +37,7 @@ const faces=[
 [[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0],.62],
 [[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0],1],
 [[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1],.52]];
-for(let face of faces){let tint=face[4];for(let i of [0,1,2,0,2,3]){let a=face[i],xx=a[0],zz=a[2];if(actorRotation){let dx=xx-p.x,dz=zz-p.z,co=Math.cos(p.a||0),si=Math.sin(p.a||0);xx=p.x+dx*co+dz*si;zz=p.z-dx*si+dz*co}verts.push(xx,a[1],zz,rgb[0]*tint,rgb[1]*tint,rgb[2]*tint)}}}
+for(let face of faces){let tint=face[4];for(let i of [0,1,2,0,2,3]){let a=face[i];verts.push(a[0],a[1],a[2],rgb[0]*tint,rgb[1]*tint,rgb[2]*tint)}}}
 function humanoid(x,z,color,scale=1){cube(x,0,z,.72*scale,1.2*scale,.5*scale,'#384e66');cube(x,1.1*scale,z,1.25*scale,1.65*scale,.65*scale,color);cube(x,2.75*scale,z,.75*scale,.78*scale,.75*scale,'#d6b59a');cube(x,3.45*scale,z,.85*scale,.25*scale,.9*scale,'#5a4a43')}
 function roof(x,z,w,d){cube(x,5.8,z,w+1.4,.5,d+1.4,'#69433c');cube(x,6.3,z,w+1,1,d+1,'#915b4d');cube(x,7.3,z,w*.65,.7,d*.8,'#a56a54');cube(x,8,z,w*.3,.4,d*.55,'#b77c5d')}
 function render(){if(!gl||!program)return;verts=[];
@@ -47,14 +46,9 @@ cube(0,-.6,0,250,.4,250,'#6c9a67');
 cube(0,-.42,0,68,.13,68,'#4784a1');
 cube(0,-.25,0,45,.3,45,'#8aa57b');
 cube(0,-.2,-28,8,.4,22,'#b7a58c');for(let z=-18;z<=19;z+=5)cube(0,-.1,z,4,.09,3,'#c7b89a');for(let x=-19;x<=19;x+=5)cube(x,-.1,0,3,.09,4,'#c7b89a');
-for(let i=-21;i<=21;i+=5){cube(-25,0,i,3,8,5,'#9f9f9a');cube(25,0,i,3,8,5,'#9f9f9a');cube(i,0,25,5,8,3,'#9f9f9a');if(Math.abs(i)>8)cube(i,0,-25,5,8,3,'#9f9f9a')}
+for(let i=-21;i<=21;i+=5){cube(-25,0,i,3,8,5,'#9f9f9a');cube(25,0,i,3,8,5,'#9f9f9a');cube(i,0,25,5,8,3,'#9f9f9a');if(Math.abs(i)>5)cube(i,0,-25,5,8,3,'#9f9f9a')}
 for(let x of [-25,25])for(let z of [-25,25]){cube(x,0,z,6,11,6,'#9e9f9a');cube(x,11,z,7,1,7,'#c1c0b7')}
-// Sandstone gateway with visible arch silhouette, roof tiles and timber beams
-for(let side of [-1,1]){let x=side*5.45;cube(x,0,-25,2.3,9,3.4,'#b9a28a');cube(x,0,-27,2.6,1.1,.45,'#806a57');cube(x,7.6,-25,2.9,1.2,3.9,'#d6c1a0');cube(x,9,-25,3.1,.45,4,'#765248');cube(x,9.45,-25,2.7,1.4,3.5,'#925e48');cube(x,10.85,-25,2.2,.6,3.1,'#b47756');for(let y=1.6;y<7.4;y+=1.6){cube(x,y,-27,.9,.24,.16,'#8b755e')}}
-for(let x of [-4,-2.8,2.8,4])cube(x,7.7,-25,1.1,1.5,3.3,'#c5ae8f');
-cube(0,9.2,-25,4.6,1.05,3.5,'#b69b7e');cube(0,10.25,-25,5.2,.45,4.1,'#70483b');cube(0,10.7,-25,4.5,1.2,3.6,'#925944');cube(0,11.9,-25,3.6,.4,3,'#b77656');
-for(let x of [-5.5,5.5]){cube(x,11.5,-25,1.4,1.3,3.7,'#c8ad88');cube(x,12.8,-25,1.7,.35,3.9,'#6c493b')}
-if(gate<.995){let shift=gate*3.75;cube(-1.88-shift,0,-25,3.72,7.7,.62,'#8d5935');cube(1.88+shift,0,-25,3.72,7.7,.62,'#8d5935');for(let y=1.1;y<7.5;y+=1.5){cube(-1.88-shift,y,-25.39,3.72,.15,.16,'#4a3a2e');cube(1.88+shift,y,-25.39,3.72,.15,.16,'#4a3a2e')}cube(-.12-shift,3.5,-25.45,.16,.45,.22,'#d5ad67');cube(.12+shift,3.5,-25.45,.16,.45,.22,'#d5ad67')}
+cube(0,0,-25,4,10,3,'#80776a');if(gate<.98)cube(0,gate*9,-25,7,8.5*(1-gate),.9,'#765338');
 for(let h of houses){cube(h[0],0,h[1],h[2],5.8,h[3],'#c6af91');roof(h[0],h[1],h[2],h[3]);cube(h[0],0,h[1]-h[3]/2-.1,1.8,2.7,.25,'#674b35');cube(h[0]-h[2]/3,3,h[1]-h[3]/2-.2,1.4,1.4,.25,'#8bc3d3')}
 cube(0,0,0,5,1.4,5,'#a8aba6');cube(0,1.4,0,4,.15,4,'#55b4d3');
 cube(-8,0,14,3,2,3,'#776d62');cube(-8,2,14,3,.3,3,'#de7d40');
@@ -63,12 +57,12 @@ for(let x=-110;x<=110;x+=11)for(let z=-110;z<=110;z+=11){let seed=Math.abs(Math.
 for(let c of chests){cube(c.x,0,c.z,2,1.1,1.4,c.open?'#706254':'#aa7d40');cube(c.x,1.05,c.z,2.2,.25,1.6,c.open?'#807469':'#e5c066')}
 for(let n of npcs)humanoid(n.x,n.z,n.color,['Finn','Mila','Theo','Ida'].includes(n.name)?.72:1);
 for(let e of enemies){let boss=e.type==='boss',h=boss?4.6:1.25,w=boss?3.2:1.6;cube(e.x,0,e.z,w,h,w,boss?'#513d66':'#56505e');cube(e.x,h,e.z,w*.8,boss?1.1:.65,w*.85,boss?'#826394':'#807987');cube(e.x-.4*(boss?2:1),h+.2,e.z-w/2-.08,.3,.3,.2,'#f14963');cube(e.x+.4*(boss?2:1),h+.2,e.z-w/2-.08,.3,.3,.2,'#f14963')}
-let px=p.x,pz=p.z,ang=p.a;actorRotation=true;
+let px=p.x,pz=p.z,ang=p.a;
 cube(px,0,pz,.95,1.35,.8,'#3a4c63');cube(px,1.3,pz,1.6,1.75,.85,'#c4cbd4');cube(px,3.05,pz,.92,1,.85,'#d4dce5');cube(px,3.6,pz,.94,.18,.9,'#5e7185');cube(px,1.5,pz+.6,1.25,1.8,.3,'#a64c5d');cube(px,1.7,pz-.49,1.05,.65,.08,'#7893b2');cube(px,3.35,pz-.48,.65,.2,.1,'#384f68');cube(px+1.15,1.4,pz,.24,slash>0?3.5:2.6,.24,'#dfe7f0');cube(px+1.15,1.45,pz,.85,.15,.3,'#b9a065');
-actorRotation=false;if(spell>0){let size=2+(1-spell/.7)*16;cube(px,.05,pz,size,.1,size,'#8d8bea')}
+if(spell>0){let size=2+(1-spell/.7)*16;cube(px,.05,pz,size,.1,size,'#8d8bea')}
 gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.DYNAMIC_DRAW);gl.vertexAttribPointer(loc.pos,3,gl.FLOAT,false,24,0);gl.vertexAttribPointer(loc.col,3,gl.FLOAT,false,24,12);gl.enableVertexAttribArray(loc.pos);gl.enableVertexAttribArray(loc.col);
-let fx=Math.sin(cam),fz=-Math.cos(cam),eye=[px-fx*15,11,pz-fz*15],target=[px+fx*4,2,pz+fz*4];gl.uniformMatrix4fv(loc.proj,false,perspective(Math.PI/3,cv.width/cv.height,.1,350));gl.uniformMatrix4fv(loc.view,false,lookAt(eye,target));gl.uniform1f(loc.light,night?.58:1);gl.drawArrays(gl.TRIANGLES,0,verts.length/6)}
-function update(ms){let dt=Math.min((ms-last)/1000||.016,.05);last=ms;clock=(clock+dt*.15)%24;let ix=joy.x+(keys.d?1:0)-(keys.a?1:0),iy=joy.y+(keys.s?1:0)-(keys.w?1:0),mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1}gate=clamp(gate+((Math.abs(p.x)<9&&Math.abs(p.z+25)<20)?1:-1)*dt*2.2,0,1);if(mag>.1&&p.hp>0){let forward=-iy,right=ix,vx=Math.cos(cam)*right+Math.sin(cam)*forward,vz=Math.sin(cam)*right-Math.cos(cam)*forward,s=dt*16*Math.min(1,mag*1.5);if(!collision(p.x+vx*s,p.z))p.x+=vx*s;if(!collision(p.x,p.z+vz*s))p.z+=vz*s;{let targetAngle=Math.atan2(vx,-vz);if(!Number.isFinite(p.a))p.a=targetAngle;let delta=Math.atan2(Math.sin(targetAngle-p.a),Math.cos(targetAngle-p.a));p.a+=clamp(delta,-dt*13,dt*13)}}
+let fx=Math.sin(cam),fz=-Math.cos(cam),eye=[px-fx*14,10,pz-fz*14],target=[px+fx*4,2,pz+fz*4];gl.uniformMatrix4fv(loc.proj,false,perspective(Math.PI/3,cv.width/cv.height,.1,350));gl.uniformMatrix4fv(loc.view,false,lookAt(eye,target));gl.uniform1f(loc.light,night?.58:1);gl.drawArrays(gl.TRIANGLES,0,verts.length/6)}
+function update(ms){let dt=Math.min((ms-last)/1000||.016,.05);last=ms;clock=(clock+dt*.15)%24;let ix=joy.x+(keys.d?1:0)-(keys.a?1:0),iy=joy.y+(keys.s?1:0)-(keys.w?1:0),mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1}gate=clamp(gate+((Math.abs(p.x)<9&&Math.abs(p.z+25)<17)?1:-1)*dt*3.5,0,1);if(mag>.1&&p.hp>0){let vx=Math.cos(cam)*ix+Math.sin(cam)*iy,vz=Math.sin(cam)*ix+Math.cos(cam)*iy,s=dt*16*Math.min(1,mag*1.5);if(!collision(p.x+vx*s,p.z))p.x+=vx*s;if(!collision(p.x,p.z+vz*s))p.z+=vz*s;p.a=Math.atan2(vx,vz)}
 slash=Math.max(0,slash-dt);spell=Math.max(0,spell-dt);hitDelay=Math.max(0,hitDelay-dt);msgTime-=dt;
 for(let n of npcs){n.phase+=dt;let tx=n.homeX+Math.sin(n.phase*.35+n.homeX)*2,tz=n.homeZ+Math.cos(n.phase*.27+n.homeZ)*2;if(!collision(tx,tz)){n.x+=(tx-n.x)*dt*.4;n.z+=(tz-n.z)*dt*.4}}
 for(let e of enemies){e.phase+=dt;let dd=d(p,e);if(dd<18&&dd>2.2&&p.hp>0){let nx=e.x+(p.x-e.x)/dd*dt*(e.type==='boss'?1.2:2),nz=e.z+(p.z-e.z)/dd*dt*(e.type==='boss'?1.2:2);if(Math.max(Math.abs(nx),Math.abs(nz))>34){e.x=nx;e.z=nz}}if(dd<(e.type==='boss'?3.3:2.1)&&hitDelay<=0&&p.hp>0){p.hp=Math.max(0,p.hp-(e.type==='boss'?20:9));hitDelay=1.1;note(p.hp?'💥 Monsterangriff!':'💀 Du bist besiegt. Drücke Neustart.');hud()}}
