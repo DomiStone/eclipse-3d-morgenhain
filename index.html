@@ -146,6 +146,42 @@ function shadowWolf(e){
  c(0,1.06,.98,.23,.28,.75,'#45404c');
  if(boss){c(0,2.01,-.74,.21,.44,.19,'#c1a4c6');c(0,1.26,-1.26,.40,.20,.17,'#9e657f')}
 }
+function banner(x,z,shade){
+ cube(x,6.7,z,.12,3.0,.16,'#574634');
+ cube(x,6.25,z-.14,1.05,2.0,.13,shade);
+ cube(x,6.12,z-.24,.12,1.1,.06,'#e2c88a');
+ cube(x,7.55,z-.14,1.25,.15,.20,'#b69b65');
+ cube(x,6.18,z-.23,.40,.40,.05,'#d7b873');
+}
+function marketStall(x,z,cloth){
+ for(let dx of [-1.65,1.65])for(let dz of [-1,1])cube(x+dx,0,z+dz,.18,3.2,.18,'#6e5039');
+ cube(x,1.1,z,3.5,.18,2.25,'#795638');
+ cube(x,2.95,z,3.9,.28,2.7,cloth);
+ for(let i=-2;i<=2;i++)cube(x+i*.68,2.8,z-1.4,.55,.38,.16,i%2?'#ead3a4':cloth);
+ for(let i=0;i<4;i++){
+  cube(x-1.15+i*.72,1.35,z-.45,.46,.34,.46,i%2?'#b77e42':'#72965c');
+  cube(x-1.15+i*.72,1.35,z+.35,.42,.31,.42,i%2?'#9b6841':'#b49b60');
+ }
+}
+function villageDetails(){
+ // Fortress standards and lantern-lit approach.
+ for(let x of [-18,18])for(let z of [-24,24])banner(x,z-.2,x<0?'#8c3448':'#365b83');
+ for(let x of [-9,9])for(let z of [-9,10])banner(x,z,'#765a8b');
+ marketStall(-8,14,'#9e6045');
+ marketStall(8,2,'#aa874b');
+ // Flower beds and irregular roadside rocks, kept away from the walkable gate.
+ for(let i=0;i<55;i++){
+  const a=i*2.39996,r=12+(i%7)*1.55,x=Math.cos(a)*r,z=Math.sin(a)*r;
+  if(Math.abs(x)<5||Math.abs(z+25)<6)continue;
+  cube(x,0,z,.46,.27,.46,i%3?'#507c4b':'#668c52');
+  cube(x,.23,z,.17,.14,.17,i%4===0?'#e9b7d5':i%4===1?'#efcb6c':i%4===2?'#a8b8ed':'#e5e0ce');
+ }
+ for(let i=0;i<26;i++){
+  const a=i*2.72,r=37+(i%6)*4,x=Math.cos(a)*r,z=Math.sin(a)*r;
+  cube(x,0,z,1.1+(i%3)*.35,.48+(i%4)*.12,.8,'#85877f');
+  cube(x-.17,.42,z-.10,.45,.12,.35,'#a4a398');
+ }
+}
 function render(){if(!gl||!program)return;
 // Match the WebGL drawing buffer to the actual CSS viewport to avoid stretching.
 const bounds=cv.getBoundingClientRect();
@@ -200,9 +236,9 @@ if(gate<.995){
  cube(0,bottom+remaining*.53,-23.93,.16,remaining*.6,.1,'#9b9b90');
 }
 for(let i=0;i<houses.length;i++)detailedHouse(houses[i],i);
+villageDetails();
 cube(0,0,0,5,1.4,5,'#a8aba6');cube(0,1.4,0,4,.15,4,'#55b4d3');
-cube(-8,0,14,3,2,3,'#776d62');cube(-8,2,14,3,.3,3,'#de7d40');
-cube(8,0,2,4,2,2,'#95754e');cube(8,2,2,5,.35,3,'#d8b56d');
+
 for(let x=-110;x<=110;x+=11)for(let z=-110;z<=110;z+=11){let seed=Math.abs(Math.sin(x*12.9898+z*78.233));if(Math.max(Math.abs(x),Math.abs(z))<36||seed<.45)continue;wildTree(x,z,seed)}
 // Village atmosphere: warm lanterns, cobblestones, and low roadside shrubs.
 for(let z of [-18,-8,7,17])for(let side of [-1,1])lantern(side*4.6,z);
