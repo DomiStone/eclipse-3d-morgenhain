@@ -4,7 +4,7 @@
 *{box-sizing:border-box}body{margin:0;background:#111d28;color:#f4eedb;font-family:system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:12px}header{display:flex;justify-content:space-between;align-items:center;gap:10px}h1{font-size:clamp(17px,3vw,26px);margin:6px 0 12px}#game{position:relative;aspect-ratio:16/9;border:3px solid #7b7165;border-radius:15px;overflow:hidden;background:#7ca7c6;touch-action:none}canvas{display:block;width:100%;height:100%;touch-action:none}#hud{position:absolute;top:8px;left:9px;color:white;text-shadow:0 2px 5px black;font-weight:700;font-size:clamp(10px,1.7vw,15px);pointer-events:none}#msg{position:absolute;top:10px;left:25%;width:50%;text-align:center;color:white;text-shadow:0 2px 5px black;font-size:clamp(10px,1.5vw,14px);pointer-events:none}#joy{position:absolute;left:12px;bottom:12px;width:clamp(84px,16vw,122px);aspect-ratio:1;border-radius:50%;border:2px solid #fff9;background:#182f4888;touch-action:none}#knob{position:absolute;left:30%;top:30%;width:40%;height:40%;border-radius:50%;background:#b9d6ec;border:2px solid white;pointer-events:none}#actions{position:absolute;right:10px;bottom:10px;display:grid;grid-template-columns:repeat(2,clamp(43px,8vw,61px));gap:6px}#actions button{aspect-ratio:1;border-radius:50%;border:2px solid #fffd;font-size:22px;color:white;touch-action:none;cursor:pointer}button{cursor:pointer}#reset{background:#344a5c;color:white;border:1px solid #8a9fac;border-radius:8px;padding:8px}#quest{background:#233443;border:1px solid #43596a;border-radius:9px;padding:12px;margin-top:10px}small{color:#bdc9d2}#help{line-height:1.5}
 </style></head><body><main><header><h1>⚔️ ECLIPSE 3D – Morgenhain</h1><button id="reset">↻ Neustart</button></header><div id="game"><canvas id="view" width="960" height="540"></canvas><div id="hud"></div><div id="msg"></div><div id="joy"><div id="knob"></div></div><div id="actions"><button id="magic" style="background:#6b54b8" aria-label="Magie">✨</button><button id="attack" style="background:#b44345" aria-label="Angriff">⚔️</button><button id="heal" style="background:#aa8231" aria-label="Heilen">🧪</button><button id="talk" style="background:#397b60" aria-label="Interagieren">💬</button></div></div><section id="quest"></section><p id="help"><small>🕹️ Joystick links · ⚔️ Angriff · ✨ Magie · 🧪 Heiltrank · 💬 Sprechen / Kaufen / Truhe öffnen · Kamera mit Finger drehen · Tastatur: WASD, Leertaste, R, H, F. Der Spielstand wird automatisch gespeichert.</small></p></main>
 <script>
-(()=>{'use strict';const $=id=>document.getElementById(id),cv=$('view'),g=cv.getContext('2d');let keys={},joy={x:0,y:0},cam=0,drag=null,slash=0,spell=0,hitDelay=0,msgTime=0,gate=0,last=0,clock=8;
+(()=>{'use strict';const $=id=>document.getElementById(id),cv=$('view'),gl=cv.getContext('webgl',{antialias:true,alpha:false});let keys={},joy={x:0,y:0},cam=0,drag=null,slash=0,spell=0,hitDelay=0,msgTime=0,gate=0,last=0,clock=8;
 const villagers=[['Mira',0,10,'#9d79b6'],['Borin',-7,15,'#a78a67'],['Lysa',7,3,'#d5ad67'],['Elara',-6,4,'#ca8976'],['Rurik',2,-18,'#7897bc'],['Sven',-17,0,'#7897bc'],['Finn',4,-4,'#d6b365'],['Mila',-4,-4,'#d67a96'],['Theo',4,7,'#6eafbf'],['Ida',-4,7,'#cfbd79'],['Tarek',17,-15,'#9ca867'],['Hilda',-17,-15,'#b2aa68']];
 const houses=[[-13,-12,9,8], [13,-12,10,8],[-13,11,10,9],[13,11,9,9],[0,17,10,8]];
 let p,npcs,enemies,chests,quest,wolves,bossDead;
@@ -20,22 +20,48 @@ function attack(){if(slash>0||p.hp<=0)return;slash=.35;let count=0;for(let i=ene
 function magic(){if(spell>0||p.hp<=0)return;spell=.7;let count=0;for(let i=enemies.length-1;i>=0;i--)if(d(p,enemies[i])<9){enemies[i].hp-=4+p.level;count++;if(enemies[i].hp<=0)kill(i)}note(count?'✨ Magie trifft '+count+' Gegner!':'✨ Magiewelle!');hud()}
 function heal(){if(p.hp>=100)return note('❤️ Du bist bereits gesund.');if(p.potions<=0)return note('🧪 Keine Tränke! Besuche Lysa.');p.potions--;p.hp=Math.min(100,p.hp+45);note('🧪 +45 Leben');hud();save()}
 function talk(){for(let c of chests)if(!c.open&&d(p,c)<4){c.open=true;p.gold+=30;p.potions++;note('📦 Truhe: +30 Gold und Heiltrank!');hud();save();return}if(Math.hypot(p.x,p.z)<4.6){p.hp=100;note('💧 Brunnen heilt dich vollständig!');hud();return}let n=npcs.filter(n=>d(n,p)<5.5).sort((a,b)=>d(a,p)-d(b,p))[0];if(!n)return note('💬 Geh näher zu einer Person.');if(n.name==='Mira'){if(quest===0){quest=1;note('📜 Mira: Besiege drei Schattenwölfe!')}else if(quest===2){quest=3;p.gold+=40;p.potions+=2;note('📜 Mira: Besiege den Schattenwächter! +40 Gold, +2 Tränke')}else note('💬 Mira: Beschütze Morgenhain!')}else if(n.name==='Borin'){if(p.gold>=25){p.gold-=25;p.power++;note('🔨 Schwert verbessert!')}else note('🔨 Verbesserung kostet 25 Gold')}else if(n.name==='Lysa'){if(p.gold>=12){p.gold-=12;p.potions++;note('🧪 Trank gekauft!')}else note('🛒 Heiltrank kostet 12 Gold')}else note('💬 '+n.name+': Sei gegrüßt, Held!');hud();save()}
-function project(x,y,z){let dx=x-p.x,dz=z-p.z,s=Math.sin(cam),c=Math.cos(cam),rx=dx*c-dz*s,rz=dx*s+dz*c;let depth=rz+14,scale=550/(depth+10);return{x:480+rx*scale,y:320+(depth-14)*7-y*scale,scale,depth}}
-function rect(x,y,z,w,h,depth,color){let q=project(x,y,z);if(q.depth< -7)return;g.fillStyle=color;let sw=Math.max(1,w*q.scale),sh=Math.max(1,h*q.scale);g.fillRect(q.x-sw/2,q.y-sh,sw,sh);if(depth){g.fillStyle='#0002';g.fillRect(q.x-sw/2,q.y-sh,Math.max(2,depth*q.scale*.2),sh)}}
-function entity(x,z,color,scale=1){rect(x,.15,z,.85*scale,1.6*scale,.5,color);rect(x,1.85*scale,z,.65*scale,.62*scale,.5,'#e6bfa3');rect(x,2.5*scale,z,.72*scale,.18*scale,.5,'#56473c')}
-function render(){g.clearRect(0,0,960,540);let night=clock>20||clock<6;g.fillStyle=night?'#253a53':'#8cbad8';g.fillRect(0,0,960,540);g.fillStyle=night?'#344f4b':'#6e9c66';g.fillRect(0,320,960,220);let shapes=[];function add(x,z,fn){let q=project(x,0,z);if(q.depth> -8&&q.depth<180)shapes.push({depth:q.depth,fn})}
-for(let x=-105;x<=105;x+=7)for(let z=-105;z<=105;z+=7){if(Math.abs(x)<35&&Math.abs(z)<35)continue;let seed=Math.abs(Math.sin(x*12.9898+z*78.233));if(seed>.79)add(x,z,()=>{rect(x,0,z,.55,3,0,'#6d523b');rect(x,3,z,3.8,4,0,'#35784f')})}
-for(let h of houses)add(h[0],h[1],()=>{rect(h[0],0,h[1],h[2],6,0,'#c9b198');rect(h[0],6,h[1],h[2]+1,2.1,0,'#87554b');rect(h[0],0,h[1]-h[3]/2,1.6,2.8,0,'#644735')});
-for(let t of [-25,25])for(let v of [-25,25])add(t,v,()=>rect(t,0,v,5,10,0,'#a9aaa4'));
-for(let i=-22;i<=22;i+=5)for(let side of [-1,1]){add(side*25,i,()=>rect(side*25,0,i,2.2,7.5,0,'#aaa9a0'));if(!(side===-1&&Math.abs(i)<5))add(i,side*25,()=>rect(i,0,side*25,4,7.5,0,'#aaa9a0'))}
-add(0,-25,()=>{if(gate<1)rect(0,gate*7,-25,7,7*(1-gate),0,'#79583b')});
-add(0,0,()=>{rect(0,0,0,4.5,1.4,0,'#a9ada7');rect(0,1.4,0,3.5,.15,0,'#4da4c2')});
-for(let c of chests)add(c.x,c.z,()=>rect(c.x,0,c.z,2,1.2,0,c.open?'#655849':'#b78c45'));
-for(let n of npcs)add(n.x,n.z,()=>entity(n.x,n.z,n.color,n.name==='Finn'||n.name==='Mila'||n.name==='Theo'||n.name==='Ida'?.72:1));
-for(let e of enemies)add(e.x,e.z,()=>{let boss=e.type==='boss';rect(e.x,0,e.z,boss?3.4:1.7,boss?5:1.7,0,boss?'#594366':'#5a5663');rect(e.x,boss?5:1.7,e.z,boss?2:1.1,boss?1.2:.8,0,boss?'#80648f':'#776d7b');if(d(p,e)<15){let q=project(e.x,boss?7:3,e.z);g.fillStyle='#310e19';g.fillRect(q.x-18,q.y-10,36,5);g.fillStyle='#eb6969';g.fillRect(q.x-18,q.y-10,36*e.hp/(boss?36:6),5)}});
-shapes.sort((a,b)=>b.depth-a.depth);for(let s of shapes)s.fn();
-g.save();g.translate(480,380);let step=Math.sin(performance.now()/100)*3;g.fillStyle='#26394d';g.fillRect(-16,30+step,13,37);g.fillRect(4,30-step,13,37);g.fillStyle='#c0d0de';g.fillRect(-27,-37,54,70);g.fillStyle='#a34d5a';g.fillRect(-23,-25,46,15);g.fillStyle='#e3e9ee';g.fillRect(-20,-70,40,37);g.fillStyle='#52667c';g.fillRect(-15,-49,30,7);g.fillStyle='#b7c6d4';g.fillRect(-39,-29,14,52);g.fillRect(25,-29,14,52);g.fillStyle=slash>0?'#fff3a9':'#e1eaf2';g.fillRect(38,-85,7,slash>0?92:76);g.fillStyle='#c6a461';g.fillRect(28,-10,27,6);if(spell>0){g.strokeStyle='#a7b3ff';g.lineWidth=5;g.beginPath();g.arc(0,20,(1-spell/.7)*240,0,Math.PI*2);g.stroke()}g.restore();
-if(night){g.fillStyle='#0b133225';g.fillRect(0,0,960,540)}}
+
+const vert=`attribute vec3 position;attribute vec3 color;uniform mat4 projection;uniform mat4 view;varying vec3 vColor;void main(){gl_Position=projection*view*vec4(position,1.);vColor=color;}`;
+const frag=`precision mediump float;varying vec3 vColor;uniform float light;void main(){gl_FragColor=vec4(vColor*light,1.);}`;
+let program=null,buffer=null,loc={};
+function shader(type,src){let sh=gl.createShader(type);gl.shaderSource(sh,src);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(sh));return sh}
+if(gl){try{program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vert));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,frag));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));gl.useProgram(program);buffer=gl.createBuffer();loc.pos=gl.getAttribLocation(program,'position');loc.col=gl.getAttribLocation(program,'color');loc.proj=gl.getUniformLocation(program,'projection');loc.view=gl.getUniformLocation(program,'view');loc.light=gl.getUniformLocation(program,'light');gl.enable(gl.DEPTH_TEST)}catch(e){console.error(e);$('msg').textContent='WebGL konnte nicht gestartet werden: '+e.message;gl=null}}
+function perspective(fov,aspect,near,far){let f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0])}
+function lookAt(eye,target){let zx=eye[0]-target[0],zy=eye[1]-target[1],zz=eye[2]-target[2],len=Math.hypot(zx,zy,zz)||1;zx/=len;zy/=len;zz/=len;let xx=zz,xz=-zx,xy=0;len=Math.hypot(xx,xz)||1;xx/=len;xz/=len;let yx=zy*xz-zz*xy,yy=zz*xx-zx*xz,yz=zx*xy-zy*xx;return new Float32Array([xx,yx,zx,0,xy,yy,zy,0,xz,yz,zz,0,-(xx*eye[0]+xy*eye[1]+xz*eye[2]),-(yx*eye[0]+yy*eye[1]+yz*eye[2]),-(zx*eye[0]+zy*eye[1]+zz*eye[2]),1])}
+let verts=[];
+function cube(x,y,z,w,h,d,hex){let rgb=hex.match(/[\da-f]{2}/gi).map(v=>parseInt(v,16)/255),x0=x-w/2,x1=x+w/2,y0=y,y1=y+h,z0=z-d/2,z1=z+d/2;
+const faces=[
+[[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],.85],
+[[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0],.67],
+[[x1,y0,z1],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],.75],
+[[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0],.62],
+[[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0],1],
+[[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1],.52]];
+for(let face of faces){let tint=face[4];for(let i of [0,1,2,0,2,3]){let a=face[i];verts.push(a[0],a[1],a[2],rgb[0]*tint,rgb[1]*tint,rgb[2]*tint)}}}
+function humanoid(x,z,color,scale=1){cube(x,0,z,.72*scale,1.2*scale,.5*scale,'#384e66');cube(x,1.1*scale,z,1.25*scale,1.65*scale,.65*scale,color);cube(x,2.75*scale,z,.75*scale,.78*scale,.75*scale,'#d6b59a');cube(x,3.45*scale,z,.85*scale,.25*scale,.9*scale,'#5a4a43')}
+function roof(x,z,w,d){cube(x,5.7,z,w+1,1.6,d+1,'#804c47');cube(x,7.2,z,w*.65,.55,d*.85,'#a06856')}
+function render(){if(!gl||!program)return;verts=[];
+const night=clock>20||clock<6,sky=night?[.08,.13,.23]:[.50,.70,.83];gl.viewport(0,0,cv.width,cv.height);gl.clearColor(...sky,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+cube(0,-.6,0,250,.4,250,'#6c9a67');
+cube(0,-.42,0,68,.13,68,'#4784a1');
+cube(0,-.25,0,45,.3,45,'#8aa57b');
+cube(0,-.2,-28,8,.4,22,'#b7a58c');
+for(let i=-21;i<=21;i+=5){cube(-25,0,i,3,8,5,'#9f9f9a');cube(25,0,i,3,8,5,'#9f9f9a');cube(i,0,25,5,8,3,'#9f9f9a');if(Math.abs(i)>5)cube(i,0,-25,5,8,3,'#9f9f9a')}
+for(let x of [-25,25])for(let z of [-25,25]){cube(x,0,z,6,11,6,'#9e9f9a');cube(x,11,z,7,1,7,'#c1c0b7')}
+cube(0,0,-25,4,10,3,'#80776a');if(gate<.98)cube(0,gate*9,-25,7,8.5*(1-gate),.9,'#765338');
+for(let h of houses){cube(h[0],0,h[1],h[2],5.8,h[3],'#c6af91');roof(h[0],h[1],h[2],h[3]);cube(h[0],0,h[1]-h[3]/2-.1,1.8,2.7,.25,'#674b35');cube(h[0]-h[2]/3,3,h[1]-h[3]/2-.2,1.4,1.4,.25,'#8bc3d3')}
+cube(0,0,0,5,1.4,5,'#a8aba6');cube(0,1.4,0,4,.15,4,'#55b4d3');
+cube(-8,0,14,3,2,3,'#776d62');cube(-8,2,14,3,.3,3,'#de7d40');
+cube(8,0,2,4,2,2,'#95754e');cube(8,2,2,5,.35,3,'#d8b56d');
+for(let x=-110;x<=110;x+=11)for(let z=-110;z<=110;z+=11){let seed=Math.abs(Math.sin(x*12.9898+z*78.233));if(Math.max(Math.abs(x),Math.abs(z))<36||seed<.45)continue;cube(x,0,z,.85,4,.85,'#6c533d');cube(x,3.2,z,4.6,5,4.6,seed>.8?'#2c6d4c':'#3e7c52')}
+for(let c of chests){cube(c.x,0,c.z,2,1.1,1.4,c.open?'#706254':'#aa7d40');cube(c.x,1.05,c.z,2.2,.25,1.6,c.open?'#807469':'#e5c066')}
+for(let n of npcs)humanoid(n.x,n.z,n.color,['Finn','Mila','Theo','Ida'].includes(n.name)?.72:1);
+for(let e of enemies){let boss=e.type==='boss',h=boss?4.6:1.25,w=boss?3.2:1.6;cube(e.x,0,e.z,w,h,w,boss?'#513d66':'#56505e');cube(e.x,h,e.z,w*.8,boss?1.1:.65,w*.85,boss?'#826394':'#807987');cube(e.x-.4*(boss?2:1),h+.2,e.z-w/2-.08,.3,.3,.2,'#f14963');cube(e.x+.4*(boss?2:1),h+.2,e.z-w/2-.08,.3,.3,.2,'#f14963')}
+let px=p.x,pz=p.z,ang=p.a;
+cube(px,0,pz,.95,1.35,.8,'#3a4c63');cube(px,1.3,pz,1.6,1.75,.85,'#c4cbd4');cube(px,3.05,pz,.92,1,.85,'#d4dce5');cube(px,3.6,pz,.94,.18,.9,'#5e7185');cube(px,1.5,pz+.6,1.25,1.8,.3,'#a64c5d');cube(px+1.15,1.4,pz,.24,slash>0?3.5:2.6,.24,'#dfe7f0');cube(px+1.15,1.45,pz,.85,.15,.3,'#b9a065');
+if(spell>0){let size=2+(1-spell/.7)*16;cube(px,.05,pz,size,.1,size,'#8d8bea')}
+gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.DYNAMIC_DRAW);gl.vertexAttribPointer(loc.pos,3,gl.FLOAT,false,24,0);gl.vertexAttribPointer(loc.col,3,gl.FLOAT,false,24,12);gl.enableVertexAttribArray(loc.pos);gl.enableVertexAttribArray(loc.col);
+let fx=Math.sin(cam),fz=-Math.cos(cam),eye=[px-fx*14,10,pz-fz*14],target=[px+fx*4,2,pz+fz*4];gl.uniformMatrix4fv(loc.proj,false,perspective(Math.PI/3,cv.width/cv.height,.1,350));gl.uniformMatrix4fv(loc.view,false,lookAt(eye,target));gl.uniform1f(loc.light,night?.58:1);gl.drawArrays(gl.TRIANGLES,0,verts.length/6)}
 function update(ms){let dt=Math.min((ms-last)/1000||.016,.05);last=ms;clock=(clock+dt*.15)%24;let ix=joy.x+(keys.d?1:0)-(keys.a?1:0),iy=joy.y+(keys.s?1:0)-(keys.w?1:0),mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1}gate=clamp(gate+((Math.abs(p.x)<7&&Math.abs(p.z+25)<12)?1:-1)*dt*1.8,0,1);if(mag>.1&&p.hp>0){let vx=Math.sin(cam)*(-iy)+Math.cos(cam)*ix,vz=Math.cos(cam)*(-iy)-Math.sin(cam)*ix,s=dt*8*mag;if(!collision(p.x+vx*s,p.z))p.x+=vx*s;if(!collision(p.x,p.z+vz*s))p.z+=vz*s;p.a=Math.atan2(vx,vz)}
 slash=Math.max(0,slash-dt);spell=Math.max(0,spell-dt);hitDelay=Math.max(0,hitDelay-dt);msgTime-=dt;
 for(let n of npcs){n.phase+=dt;let tx=n.homeX+Math.sin(n.phase*.35+n.homeX)*2,tz=n.homeZ+Math.cos(n.phase*.27+n.homeZ)*2;if(!collision(tx,tz)){n.x+=(tx-n.x)*dt*.4;n.z+=(tz-n.z)*dt*.4}}
