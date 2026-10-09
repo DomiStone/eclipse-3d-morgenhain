@@ -18,7 +18,11 @@ main{max-width:850px}
 .deckFoot{display:flex;justify-content:space-between;gap:10px;color:#c8d9e3;font-size:9px;letter-spacing:1px;font-weight:800}
 @media(max-width:850px){#game{height:clamp(245px,44dvh,510px);aspect-ratio:auto}#controlDeck{padding:8px 10px 12px}}
 @media(max-width:390px){.deckControls{height:184px}#controlDeck #joy{width:112px;left:3px}#controlDeck #camjoy{width:87px;right:5px}#controlDeck #actions{right:3px;grid-template-columns:repeat(2,41px);gap:5px}}
-@media(min-width:851px){#game{height:min(57vh,570px)}}
+/* Square, larger game display above the handheld controls. */
+#game{width:100%;height:auto;aspect-ratio:1/1}
+@media(max-width:850px){#game{height:auto;aspect-ratio:1/1}}
+@media(min-width:851px){#game{height:auto;aspect-ratio:1/1;max-height:none}}
+
 </style></head><body><main><header><h1>⚔️ ECLIPSE 3D – Morgenhain</h1><button id="reset">↻ Neustart</button></header><div id="game"><canvas id="view" width="960" height="540"></canvas><div id="hud"></div><div id="msg"></div></div><div id="controlDeck"><div class="deckTitle">ECLIPSE <span>✦ MORGENHAIN ✦</span> 3D</div><div class="deckControls"><div id="joy"><div id="knob"></div></div><div id="camjoy" role="group" aria-label="Kamera-Joystick zum Drehen"><div id="camknob"></div></div><div id="actions"><button id="magic" style="background:#6b54b8" aria-label="Magie">✨</button><button id="attack" style="background:#b44345" aria-label="Angriff">⚔️</button><button id="heal" style="background:#aa8231" aria-label="Heilen">🧪</button><button id="talk" style="background:#397b60" aria-label="Interagieren">💬</button></div><div class="deckFoot"><span>◀ BEWEGUNG</span><span>✦ KAMERA & AKTIONEN ▶</span></div></div></div><section id="quest"></section><p id="help"><small>🕹️ Links unter dem Bildschirm bewegen · rechts Kamera drehen · schneller laufen · ⚔️ Angriff · ✨ Magie · 🧪 Heiltrank · 💬 Sprechen / Kaufen / Truhe öffnen · Kamera: rechter Joystick unter dem Bildschirm oder im Bild wischen · Tastatur: WASD, Leertaste, R, H, F. Der Spielstand wird automatisch gespeichert.</small></p></main>
 <script>
 (()=>{'use strict';const $=id=>document.getElementById(id),cv=$('view');let gl=cv.getContext('webgl',{antialias:true,alpha:false});let keys={},joy={x:0,y:0},cam=0,manualCam=0,drag=null,slash=0,spell=0,hitDelay=0,msgTime=0,gate=0,last=null,clock=8,moveSpeed=0,strafeSpeed=0,turnSpeed=0;
