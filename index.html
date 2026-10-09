@@ -93,7 +93,7 @@ function update(ms){try{let dt=last===null?0:Math.max(0,Math.min((ms-last)/1000,
 // Mobile FPS controls: left stick moves; right-side swipe aims.
 const deadZone=.12;
 const axis=v=>Math.abs(v)<=deadZone?0:Math.sign(v)*(Math.abs(v)-deadZone)/(1-deadZone);
-const forward=p.hp>0?-axis(iy):0,strafe=p.hp>0?-axis(ix):0;
+const forward=p.hp>0?-axis(iy):0,strafe=p.hp>0?axis(ix):0;
 const desiredForward=forward*(forward>=0?11:9);
 const desiredStrafe=strafe*8.5;
 const smoothing=1-Math.exp(-dt*(Math.abs(forward)+Math.abs(strafe)>.01?9:13));
