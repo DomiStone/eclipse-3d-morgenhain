@@ -58,10 +58,13 @@ for(let c of chests){cube(c.x,0,c.z,2,1.1,1.4,c.open?'#706254':'#aa7d40');cube(c
 for(let n of npcs)humanoid(n.x,n.z,n.color,['Finn','Mila','Theo','Ida'].includes(n.name)?.72:1);
 for(let e of enemies){let boss=e.type==='boss',h=boss?4.6:1.25,w=boss?3.2:1.6;cube(e.x,0,e.z,w,h,w,boss?'#513d66':'#56505e');cube(e.x,h,e.z,w*.8,boss?1.1:.65,w*.85,boss?'#826394':'#807987');cube(e.x-.4*(boss?2:1),h+.2,e.z-w/2-.08,.3,.3,.2,'#f14963');cube(e.x+.4*(boss?2:1),h+.2,e.z-w/2-.08,.3,.3,.2,'#f14963')}
 let px=p.x,pz=p.z;rotatePlayer=true;
+/* First-person camera: the player body must not obstruct the view. */
+/*
 cube(px,0,pz,.95,1.35,.8,'#3a4c63');cube(px,1.3,pz,1.6,1.75,.85,'#c4cbd4');cube(px,3.05,pz,.92,1,.85,'#d4dce5');cube(px,3.6,pz,.94,.18,.9,'#5e7185');cube(px,1.5,pz+.6,1.25,1.8,.3,'#a64c5d');cube(px,1.7,pz-.49,1.05,.65,.08,'#7893b2');cube(px,3.35,pz-.48,.65,.2,.1,'#384f68');cube(px+1.15,1.4,pz,.24,slash>0?3.5:2.6,.24,'#dfe7f0');cube(px+1.15,1.45,pz,.85,.15,.3,'#b9a065');
+*/
 rotatePlayer=false;if(spell>0){let size=2+(1-spell/.7)*16;cube(px,.05,pz,size,.1,size,'#8d8bea')}
 gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.DYNAMIC_DRAW);gl.vertexAttribPointer(loc.pos,3,gl.FLOAT,false,24,0);gl.vertexAttribPointer(loc.col,3,gl.FLOAT,false,24,12);gl.enableVertexAttribArray(loc.pos);gl.enableVertexAttribArray(loc.col);
-let fx=Math.sin(cam),fz=-Math.cos(cam),eye=[px-fx*14,10,pz-fz*14],target=[px+fx*4,2,pz+fz*4];gl.uniformMatrix4fv(loc.proj,false,perspective(Math.PI/3,cv.width/cv.height,.1,350));gl.uniformMatrix4fv(loc.view,false,lookAt(eye,target));gl.uniform1f(loc.light,night?.58:1);gl.drawArrays(gl.TRIANGLES,0,verts.length/6)}
+let fx=Math.sin(p.a),fz=-Math.cos(p.a),eye=[px,2.85,pz],target=[px+fx*12,2.85,pz+fz*12];gl.uniformMatrix4fv(loc.proj,false,perspective(Math.PI/3,cv.width/cv.height,.1,350));gl.uniformMatrix4fv(loc.view,false,lookAt(eye,target));gl.uniform1f(loc.light,night?.58:1);gl.drawArrays(gl.TRIANGLES,0,verts.length/6)}
 function update(ms){try{let dt=Math.min((ms-last)/1000||.016,.05);last=ms;clock=(clock+dt*.15)%24;manualCam=Math.max(0,manualCam-dt);let ix=joy.x+(keys.d?1:0)-(keys.a?1:0),iy=joy.y+(keys.s?1:0)-(keys.w?1:0),mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1}gate=clamp(gate+((Math.abs(p.x)<9&&Math.abs(p.z+25)<17)?1:-1)*dt*3.5,0,1);// Smooth character motion: dead zones, acceleration, braking and turn inertia.
 const deadZone=.14;
 const axis=v=>Math.abs(v)<=deadZone?0:Math.sign(v)*(Math.abs(v)-deadZone)/(1-deadZone);
@@ -71,25 +74,21 @@ let turnBlend=1-Math.exp(-dt*10);
 turnSpeed+=(targetTurn-turnSpeed)*turnBlend;
 if(Math.abs(turnSpeed)<.012&&horizontal===0)turnSpeed=0;
 p.a=(p.a||0)+turnSpeed*dt;
-let targetSpeed=vertical*(vertical>=0?11:5.5);
+let targetSpeed=vertical*(vertical>=0?11:9);
 let accel=targetSpeed===0?11:targetSpeed*moveSpeed<0?15:7;
 moveSpeed+=(targetSpeed-moveSpeed)*(1-Math.exp(-dt*accel));
 if(Math.abs(moveSpeed)<.035&&vertical===0)moveSpeed=0;
 let step=moveSpeed*dt;
 let vx=Math.sin(p.a)*step,vz=-Math.cos(p.a)*step;
 let moved=false;if(!collision(p.x+vx,p.z)){p.x+=vx;moved=true}if(!collision(p.x,p.z+vz)){p.z+=vz;moved=true}if(!moved&&Math.abs(step)>.001)moveSpeed=0;
-if(manualCam<=0){
-  let cameraDelta=Math.atan2(Math.sin(p.a-cam),Math.cos(p.a-cam));
-  cam+=cameraDelta*Math.min(1,dt*5);
-}
-
+cam=p.a;
 slash=Math.max(0,slash-dt);spell=Math.max(0,spell-dt);hitDelay=Math.max(0,hitDelay-dt);msgTime-=dt;
 for(let n of npcs){n.phase+=dt;let tx=n.homeX+Math.sin(n.phase*.35+n.homeX)*2,tz=n.homeZ+Math.cos(n.phase*.27+n.homeZ)*2;if(!collision(tx,tz)){n.x+=(tx-n.x)*dt*.4;n.z+=(tz-n.z)*dt*.4}}
 for(let e of enemies){e.phase+=dt;let dd=d(p,e);if(dd<18&&dd>2.2&&p.hp>0){let nx=e.x+(p.x-e.x)/dd*dt*(e.type==='boss'?1.2:2),nz=e.z+(p.z-e.z)/dd*dt*(e.type==='boss'?1.2:2);if(Math.max(Math.abs(nx),Math.abs(nz))>34){e.x=nx;e.z=nz}}if(dd<(e.type==='boss'?3.3:2.1)&&hitDelay<=0&&p.hp>0){p.hp=Math.max(0,p.hp-(e.type==='boss'?20:9));hitDelay=1.1;note(p.hp?'💥 Monsterangriff!':'💀 Du bist besiegt. Drücke Neustart.');hud()}}
 if(msgTime<=0)$('msg').textContent=clock>20||clock<6?'🌙 Nacht in Morgenhain':'☀️ Morgenhain – '+enemies.length+' Gegner';render();requestAnimationFrame(update)}catch(err){console.error('Spiel-Fehler',err);$('msg').textContent='Spiel-Fehler: '+err.message;requestAnimationFrame(update)}}
 let sid=null,stick=$('joy'),knob=$('knob');function setStick(e){let r=stick.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,max=r.width*.3,m=Math.hypot(x,y);if(m>max){x*=max/m;y*=max/m}joy={x:x/max,y:y/max};knob.style.transform='translate('+x+'px,'+y+'px)'}
 stick.addEventListener('pointerdown',e=>{e.preventDefault();sid=e.pointerId;stick.setPointerCapture(sid);setStick(e)});stick.addEventListener('pointermove',e=>{if(e.pointerId===sid)setStick(e)});function release(){sid=null;joy={x:0,y:0};knob.style.transform=''}for(let ev of ['pointerup','pointercancel','lostpointercapture'])stick.addEventListener(ev,release);
-const gameArea=$('game');gameArea.addEventListener('pointerdown',e=>{if(e.target.closest('#joy,#actions,button'))return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};gameArea.setPointerCapture(e.pointerId);e.preventDefault()});gameArea.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;let dx=e.clientX-drag.x;cam+=dx*.012;manualCam=2.5;drag.x=e.clientX;drag.y=e.clientY;e.preventDefault()});for(let ev of ['pointerup','pointercancel','lostpointercapture'])gameArea.addEventListener(ev,e=>{if(drag?.id===e.pointerId)drag=null});
+const gameArea=$('game');gameArea.addEventListener('pointerdown',e=>{if(e.target.closest('#joy,#actions,button'))return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};gameArea.setPointerCapture(e.pointerId);e.preventDefault()});gameArea.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;let dx=e.clientX-drag.x;p.a-=dx*.007;cam=p.a;manualCam=0;drag.x=e.clientX;drag.y=e.clientY;e.preventDefault()});for(let ev of ['pointerup','pointercancel','lostpointercapture'])gameArea.addEventListener(ev,e=>{if(drag?.id===e.pointerId)drag=null});
 const map={w:'w',ArrowUp:'w',s:'s',ArrowDown:'s',a:'a',ArrowLeft:'a',d:'d',ArrowRight:'d'};window.addEventListener('keydown',e=>{if(map[e.key]){keys[map[e.key]]=true;e.preventDefault()}if(e.repeat)return;if(e.code==='Space'){attack();e.preventDefault()}if(e.key==='r')magic();if(e.key==='h')heal();if(e.key==='f')talk()});window.addEventListener('keyup',e=>{if(map[e.key])keys[map[e.key]]=false});$('attack').onclick=attack;$('magic').onclick=magic;$('heal').onclick=heal;$('talk').onclick=talk;$('reset').onclick=()=>{if(confirm('Neues Spiel starten?')){localStorage.removeItem('morgenhain-v2');init(false)}};setInterval(save,8000);window.addEventListener('pagehide',save);init();requestAnimationFrame(update);
 })();
 </script></body></html>
