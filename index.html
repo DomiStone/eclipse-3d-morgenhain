@@ -14,10 +14,11 @@ main{max-width:850px}
 #controlDeck #joy{position:absolute;left:clamp(6px,4vw,30px);bottom:17px;width:clamp(116px,29vw,158px);height:auto;aspect-ratio:1;z-index:2;background:#1c3449;border:4px solid #a6b8c3;box-shadow:0 5px 13px #152431}
 #controlDeck #camjoy{position:absolute;right:clamp(5px,3vw,24px);top:0;bottom:auto;width:clamp(86px,22vw,115px);height:auto;aspect-ratio:1;z-index:2;border:3px solid #d8effb}
 #controlDeck #actions{position:absolute;right:clamp(3px,3vw,22px);bottom:0;display:grid;grid-template-columns:repeat(2,clamp(41px,10vw,54px));gap:6px;z-index:2}
+#controlDeck #actions{grid-template-columns:repeat(3,clamp(38px,9vw,50px));gap:5px}
 #controlDeck #actions button{font-size:clamp(17px,5vw,22px);box-shadow:0 3px 6px #17232d}
 .deckFoot{display:flex;justify-content:space-between;gap:10px;color:#c8d9e3;font-size:9px;letter-spacing:1px;font-weight:800}
 @media(max-width:850px){#game{height:clamp(245px,44dvh,510px);aspect-ratio:auto}#controlDeck{padding:8px 10px 12px}}
-@media(max-width:390px){.deckControls{height:184px}#controlDeck #joy{width:112px;left:3px}#controlDeck #camjoy{width:87px;right:5px}#controlDeck #actions{right:3px;grid-template-columns:repeat(2,41px);gap:5px}}
+@media(max-width:390px){.deckControls{height:190px}#controlDeck #joy{width:105px;left:3px}#controlDeck #camjoy{width:82px;right:5px}#controlDeck #actions{right:3px;grid-template-columns:repeat(3,37px);gap:4px}#controlDeck #actions button{font-size:17px}}
 /* Square, larger game display above the handheld controls. */
 #game{width:100%;height:auto;aspect-ratio:1/1}
 @media(max-width:850px){#game{height:auto;aspect-ratio:1/1}}
@@ -28,7 +29,7 @@ main{max-width:850px}
 #inventoryItems{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
 #inventoryItems button{background:#35465a;color:#fff;border:1px solid #9b8052;border-radius:8px;padding:9px;min-height:38px;cursor:pointer}
 #inventoryItems button.equipped{background:#426747;border-color:#c8bc7a}
-</style></head><body><main><header><h1>⚔️ ECLIPSE 3D – Morgenhain</h1><button id="reset">↻ Neustart</button></header><div id="game"><canvas id="view" width="960" height="540"></canvas><div id="hud"></div><div id="msg"></div></div><div id="controlDeck"><div class="deckTitle">ECLIPSE <span>✦ MORGENHAIN ✦</span> 3D</div><div class="deckControls"><div id="joy"><div id="knob"></div></div><div id="camjoy" role="group" aria-label="Kamera-Joystick zum Drehen"><div id="camknob"></div></div><div id="actions"><button id="magic" style="background:#6b54b8" aria-label="Magie">✨</button><button id="attack" style="background:#b44345" aria-label="Angriff">⚔️</button><button id="heal" style="background:#aa8231" aria-label="Heilen">🧪</button><button id="talk" style="background:#397b60" aria-label="Interagieren">💬</button></div><div class="deckFoot"><span>◀ BEWEGUNG</span><span>✦ KAMERA & AKTIONEN ▶</span></div></div></div><section id="quest"></section><details id="inventoryPanel"><summary>🎒 Inventar · <span id="inventoryCount">0 Gegenstände</span></summary><div id="inventoryItems"></div></details><p id="help"><small>🕹️ Links unter dem Bildschirm bewegen · rechts Kamera drehen · schneller laufen · ⚔️ Angriff · ✨ Magie · 🧪 Heiltrank · 💬 Sprechen / Kaufen / Truhe öffnen · Kamera: rechter Joystick unter dem Bildschirm oder im Bild wischen · Tastatur: WASD, Leertaste, R, H, F. Der Spielstand wird automatisch gespeichert.</small></p></main>
+</style></head><body><main><header><h1>⚔️ ECLIPSE 3D – Morgenhain</h1><button id="reset">↻ Neustart</button></header><div id="game"><canvas id="view" width="960" height="540"></canvas><div id="hud"></div><div id="msg"></div></div><div id="controlDeck"><div class="deckTitle">ECLIPSE <span>✦ MORGENHAIN ✦</span> 3D</div><div class="deckControls"><div id="joy"><div id="knob"></div></div><div id="camjoy" role="group" aria-label="Kamera-Joystick zum Drehen"><div id="camknob"></div></div><div id="actions"><button id="magic" style="background:#6b54b8" aria-label="Magie">✨</button><button id="attack" style="background:#b44345" aria-label="Angriff">⚔️</button><button id="heal" style="background:#aa8231" aria-label="Heilen">🧪</button><button id="talk" style="background:#397b60" aria-label="Sprechen">💬</button><button id="action" style="background:#a46b30" aria-label="Truhe öffnen und interagieren">🗝️</button><button id="inventoryBtn" style="background:#4b7094" aria-label="Inventar öffnen">🎒</button></div><div class="deckFoot"><span>◀ BEWEGUNG</span><span>✦ KAMERA & AKTIONEN ▶</span></div></div></div><section id="quest"></section><details id="inventoryPanel"><summary>🎒 Inventar · <span id="inventoryCount">0 Gegenstände</span></summary><div id="inventoryItems"></div></details><p id="help"><small>🕹️ Links unter dem Bildschirm bewegen · rechts Kamera drehen · schneller laufen · ⚔️ Angriff · ✨ Magie · 🧪 Heiltrank · 💬 Sprechen / Kaufen · 🗝️ Truhe öffnen · 🎒 Inventar · Kamera: rechter Joystick unter dem Bildschirm oder im Bild wischen · Tastatur: WASD, Leertaste, R, H, F. Der Spielstand wird automatisch gespeichert.</small></p></main>
 <script>
 (()=>{'use strict';const $=id=>document.getElementById(id),cv=$('view');let gl=cv.getContext('webgl',{antialias:true,alpha:false});let keys={},joy={x:0,y:0},cam=0,manualCam=0,drag=null,slash=0,spell=0,hitDelay=0,msgTime=0,gate=0,last=null,clock=8,moveSpeed=0,strafeSpeed=0,turnSpeed=0;
 const villagers=[['Mira',0,10,'#9d79b6'],['Borin',-7,15,'#a78a67'],['Lysa',7,3,'#d5ad67'],['Elara',-6,4,'#ca8976'],['Rurik',2,-18,'#7897bc'],['Sven',-17,0,'#7897bc'],['Finn',4,-4,'#d6b365'],['Mila',-4,-4,'#d67a96'],['Theo',4,7,'#6eafbf'],['Ida',-4,7,'#cfbd79'],['Tarek',17,-15,'#9ca867'],['Hilda',-17,-15,'#b2aa68']];
@@ -37,7 +38,10 @@ let p,npcs,enemies,chests,quest,wolves,bossDead,inventory=[],equippedWeapon='rus
 let worldSeconds=0,guards=[{x:-5.8,z:-28.4,patrol:0,walk:0},{x:5.8,z:-28.4,patrol:0,walk:0}];
 const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),d=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 function note(t){$('msg').textContent=t;msgTime=4}
-function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>120||Math.abs(p.z)>120){p.x=0;p.z=-9}if(!Number.isFinite(p.hp))p.hp=100;if(!Number.isFinite(p.a))p.a=0;quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=Number.isFinite(p.a)?p.a:0;moveSpeed=0;strafeSpeed=0;turnSpeed=0;last=null;gate=0;worldSeconds=0;guards.forEach(g=>{g.patrol=0;g.walk=0;g.attackCooldown=0});enemies=data?.enemies||Array.from({length:13},(_,i)=>{let a=i*.55+2,r=39+(i%3)*6;return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:6,type:'wolf',phase:i}});if(!bossDead&&!enemies.some(e=>e.type==='boss'))enemies.push({x:0,z:-70,hp:36,type:'boss',phase:0});chests=data?.chests||[{x:13,z:-44,open:false},{x:-16,z:-49,open:false}];inventory=Array.isArray(data?.inventory)?data.inventory:[];equippedWeapon=data?.equippedWeapon||'rusty';npcs=villagers.map((v,i)=>({facing:0,name:v[0],x:v[1],z:v[2],homeX:v[1],homeZ:v[2],color:v[3],phase:i*1.7,taskStep:0,taskWait:2+i%4,indoors:false,carryingWater:false}));note('🏰 Willkommen in Morgenhain!');hud()}
+function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>120||Math.abs(p.z)>120){p.x=0;p.z=-9}if(!Number.isFinite(p.hp))p.hp=100;if(!Number.isFinite(p.a))p.a=0;quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=Number.isFinite(p.a)?p.a:0;moveSpeed=0;strafeSpeed=0;turnSpeed=0;last=null;gate=0;worldSeconds=0;guards.forEach(g=>{g.patrol=0;g.walk=0;g.attackCooldown=0});enemies=data?.enemies||Array.from({length:13},(_,i)=>{let a=i*.55+2,r=39+(i%3)*6;return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:6,type:'wolf',phase:i}});if(!bossDead&&!enemies.some(e=>e.type==='boss'))enemies.push({x:0,z:-70,hp:36,type:'boss',phase:0});chests=data?.chests||[{x:13,z:-44,open:false},{x:-16,z:-49,open:false}];
+ // An accessible starter chest close to the village path.
+ if(!chests.some(c=>c.x===7&&c.z===-5))chests.push({x:7,z:-5,open:false});
+ chests.forEach(c=>{if(c.open)c.openProgress=1;else c.openProgress=0});inventory=Array.isArray(data?.inventory)?data.inventory:[];equippedWeapon=data?.equippedWeapon||'rusty';npcs=villagers.map((v,i)=>({facing:0,name:v[0],x:v[1],z:v[2],homeX:v[1],homeZ:v[2],color:v[3],phase:i*1.7,taskStep:0,taskWait:2+i%4,indoors:false,carryingWater:false}));note('🏰 Willkommen in Morgenhain!');hud()}
 function save(){try{localStorage.setItem('morgenhain-v2',JSON.stringify({p,quest,wolves,bossDead,clock,enemies,chests,inventory,equippedWeapon}))}catch(e){}}
 const weaponCatalog={
  rusty:{name:'Altes Schwert',icon:'⚔️',damage:0},
@@ -51,7 +55,7 @@ function inventoryUI(){
  const panel=$('inventoryItems');if(!panel)return;
  $('inventoryCount').textContent=inventory.length+' Fundstücke · '+p.gold+' 🪙';
  panel.replaceChildren();
- const info=document.createElement('span');info.textContent='🪙 Gold: '+p.gold+' · 🧪 Tränke: '+p.potions+' · Ausgerüstet: '+weaponCatalog[equippedWeapon].name;
+ const info=document.createElement('span');info.textContent='🪙 Gold: '+p.gold+' · 🧪 Tränke: '+p.potions+' · Ausgerüstet: '+(weaponCatalog[equippedWeapon]||weaponCatalog.rusty).name;
  info.style.width='100%';panel.append(info);
  for(const id of ['rusty',...inventory.filter(k=>weaponCatalog[k])]){
   if(!weaponCatalog[id])continue;
@@ -72,12 +76,30 @@ function kill(i){let e=enemies[i];if(e.type==='boss'){bossDead=true;p.gold+=100;
 function attack(){if(slash>0||p.hp<=0)return;slash=.44;let count=0;for(let i=enemies.length-1;i>=0;i--){let e=enemies[i],dd=d(p,e),angle=Math.atan2(e.x-p.x,e.z-p.z),diff=Math.atan2(Math.sin(angle-p.a),Math.cos(angle-p.a));if(dd<(e.type==='boss'?6.2:5.2)&&Math.abs(diff)<1.45){e.hp-=3+p.power+weaponDamage();count++;if(e.hp<=0)kill(i)}}if(!count)note('⚔️ Kein Gegner in Reichweite');else note('⚔️ Treffer!');hud()}
 function magic(){if(spell>0||p.hp<=0)return;spell=.7;let count=0;for(let i=enemies.length-1;i>=0;i--)if(d(p,enemies[i])<9){enemies[i].hp-=4+p.level;count++;if(enemies[i].hp<=0)kill(i)}note(count?'✨ Magie trifft '+count+' Gegner!':'✨ Magiewelle!');hud()}
 function heal(){if(p.hp>=100)return note('❤️ Du bist bereits gesund.');if(p.potions<=0)return note('🧪 Keine Tränke! Besuche Lysa.');p.potions--;p.hp=Math.min(100,p.hp+45);note('🧪 +45 Leben');hud();save()}
-function talk(){for(let i=0;i<chests.length;i++){const c=chests[i];if(!c.open&&d(p,c)<4){
- c.open=true;c.openAt=worldSeconds;
- const coins=i===0?45:65;p.gold+=coins;p.potions++;
- const weapon=i===0?'steel':'axe';addLoot(weapon);addLoot(i===0?'gem':'relic');
- note('📦 Truhe geöffnet! +'+coins+' 🪙, 🧪 und '+weaponCatalog[weapon].name+'!');hud();save();return
- }}if(Math.hypot(p.x,p.z)<4.6){p.hp=100;note('💧 Brunnen heilt dich vollständig!');hud();return}let n=npcs.filter(n=>!n.indoors&&d(n,p)<5.5).sort((a,b)=>d(a,p)-d(b,p))[0];if(!n)return note('💬 Geh näher zu einer Person.');if(n.name==='Mira'){if(quest===0){quest=1;note('📜 Mira: Besiege drei Schattenwölfe!')}else if(quest===2){quest=3;p.gold+=40;p.potions+=2;note('📜 Mira: Besiege den Schattenwächter! +40 Gold, +2 Tränke')}else note('💬 Mira: Beschütze Morgenhain!')}else if(n.name==='Borin'){if(p.gold>=25){p.gold-=25;p.power++;note('🔨 Schwert verbessert!')}else note('🔨 Verbesserung kostet 25 Gold')}else if(n.name==='Lysa'){if(p.gold>=12){p.gold-=12;p.potions++;note('🧪 Trank gekauft!')}else note('🛒 Heiltrank kostet 12 Gold')}else note('💬 '+n.name+': Sei gegrüßt, Held!');hud();save()}
+function openNearbyChest(){
+ let nearest=null,index=-1,best=4.5;
+ for(let i=0;i<chests.length;i++){
+  const c=chests[i],distance=d(p,c);
+  if(!c.open&&distance<best){nearest=c;index=i;best=distance}
+ }
+ if(!nearest)return false;
+ nearest.open=true;nearest.openProgress=0;
+ const coins=index===0?45:index===1?65:25;
+ p.gold+=coins;p.potions++;
+ const weapon=index===0?'steel':index===1?'axe':'steel';
+ addLoot(weapon);addLoot(index===1?'relic':'gem');
+ note('📦 Truhe! +'+coins+' Gold, Heiltrank und '+weaponCatalog[weapon].name);
+ hud();save();return true;
+}
+function action(){
+ if(openNearbyChest())return;
+ talk();
+}
+function toggleInventory(){
+ const panel=$('inventoryPanel');panel.open=!panel.open;
+ if(panel.open){inventoryUI();panel.scrollIntoView({block:'nearest',behavior:'smooth'})}
+}
+function talk(){if(Math.hypot(p.x,p.z)<4.6){p.hp=100;note('💧 Brunnen heilt dich vollständig!');hud();return}let n=npcs.filter(n=>!n.indoors&&d(n,p)<5.5).sort((a,b)=>d(a,p)-d(b,p))[0];if(!n)return note('💬 Geh näher zu einer Person.');if(n.name==='Mira'){if(quest===0){quest=1;note('📜 Mira: Besiege drei Schattenwölfe!')}else if(quest===2){quest=3;p.gold+=40;p.potions+=2;note('📜 Mira: Besiege den Schattenwächter! +40 Gold, +2 Tränke')}else note('💬 Mira: Beschütze Morgenhain!')}else if(n.name==='Borin'){if(p.gold>=25){p.gold-=25;p.power++;note('🔨 Schwert verbessert!')}else note('🔨 Verbesserung kostet 25 Gold')}else if(n.name==='Lysa'){if(p.gold>=12){p.gold-=12;p.potions++;note('🧪 Trank gekauft!')}else note('🛒 Heiltrank kostet 12 Gold')}else note('💬 '+n.name+': Sei gegrüßt, Held!');hud();save()}
 
 const vert=`attribute vec3 position;attribute vec3 color;uniform mat4 projection;uniform mat4 view;varying vec3 vColor;void main(){gl_Position=projection*view*vec4(position,1.);vColor=color;}`;
 const frag=`precision mediump float;varying vec3 vColor;uniform float light;void main(){gl_FragColor=vec4(vColor*light,1.);}`;
@@ -467,17 +489,31 @@ for(let i=0;i<25;i++){
  cube(x+.35,.23,z-.2,.6,.36,.6,'#3f7046');
 }
 for(let c of chests){
- const t=c.open?Math.min(1,Math.max(0,(worldSeconds-(c.openAt??-5))/1.1)):0;
- cube(c.x,0,c.z,2,1.1,1.4,'#80552f');
- cube(c.x,0.92,c.z,1.82,.12,1.22,'#312b28');
- cube(c.x,0.46,c.z-.72,.25,.65,.16,'#d4aa56');
- cube(c.x,0.46,c.z+.72,.25,.65,.16,'#d4aa56');
- // Hinged lid lifts and tilts back; visible gold and loot inside.
- cube(c.x,1.06+t*.8,c.z+t*.7,2.2,.28,1.55-t*.35,'#b68a48');
- cube(c.x,1.23+t*.8,c.z+t*.7,2.24,.12,1.6-t*.35,'#e5c066');
+ const t=c.openProgress||0,angle=t*1.35;
+ const hingeZ=c.z+.68;
+ // Detailed wooden chest: body, dark interior, iron bands and front lock.
+ cube(c.x,0,c.z,2.2,1.0,1.55,'#704424');
+ cube(c.x,.16,c.z,2.05,.15,1.44,'#946033');
+ cube(c.x,.91,c.z,1.9,.13,1.28,'#282321');
+ for(const side of [-.79,.79]){
+  cube(c.x+side,.05,c.z,.13,1.05,1.59,'#b08b4e');
+  cube(c.x+side,1.04,c.z+.69,.14,.20,.16,'#d4b46a');
+ }
+ cube(c.x,.55,c.z-.80,.42,.55,.13,'#bba067');
+ cube(c.x,.57,c.z-.89,.14,.17,.10,'#37342e');
+ // Lid rotates visually around its rear hinge using thin articulated wooden slats.
+ const segments=7;
+ for(let j=0;j<segments;j++){
+  const local=-1.48+(j+.5)*1.48/segments;
+  const z=hingeZ+local*Math.cos(angle);
+  const y=1.08-local*Math.sin(angle);
+  cube(c.x,y,z,2.28,.22,.24,'#b88745');
+  cube(c.x,y+.13,z,2.3,.08,.24,'#dfb668');
+  if(j===0||j===segments-1)cube(c.x,y+.20,z,2.34,.08,.18,'#66533b');
+ }
  if(c.open){
-  for(let k=0;k<5;k++)cube(c.x-.65+k*.32,.94,c.z-.18+(k%2)*.3,.26,.12,.26,'#f4c95c');
-  cube(c.x,1.06+Math.sin(worldSeconds*2)*.07,c.z,.35,.24,.32,'#8fd3d8');
+  for(let k=0;k<6;k++)cube(c.x-.68+(k%3)*.67,.94,c.z-.30+Math.floor(k/3)*.43,.31,.11,.28,'#f4c64d');
+  cube(c.x,1.08+Math.sin(worldSeconds*2)*.06,c.z,.36,.28,.32,'#91cbdc');
  }
 }
 for(let i=0;i<npcs.length;i++){
@@ -560,7 +596,7 @@ viewModel=false;
 gl.clear(gl.DEPTH_BUFFER_BIT);
 gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.DYNAMIC_DRAW);
 gl.drawArrays(gl.TRIANGLES,0,verts.length/6)}
-function update(ms){try{let dt=last===null?0:Math.max(0,Math.min((ms-last)/1000,.05));last=ms;worldSeconds+=dt;clock=(clock+dt*.15)%24;manualCam=Math.max(0,manualCam-dt);let ix=joy.x+(keys.d?1:0)-(keys.a?1:0),iy=joy.y+(keys.s?1:0)-(keys.w?1:0),mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1}gate=clamp(gate+((Math.abs(p.x)<9&&Math.abs(p.z+25)<17)?1:-1)*dt*3.5,0,1);// Smooth character motion: dead zones, acceleration, braking and turn inertia.
+function update(ms){try{let dt=last===null?0:Math.max(0,Math.min((ms-last)/1000,.05));last=ms;worldSeconds+=dt;for(const c of chests)if(c.open&&c.openProgress<1)c.openProgress=Math.min(1,c.openProgress+dt*1.25);clock=(clock+dt*.15)%24;manualCam=Math.max(0,manualCam-dt);let ix=joy.x+(keys.d?1:0)-(keys.a?1:0),iy=joy.y+(keys.s?1:0)-(keys.w?1:0),mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1}gate=clamp(gate+((Math.abs(p.x)<9&&Math.abs(p.z+25)<17)?1:-1)*dt*3.5,0,1);// Smooth character motion: dead zones, acceleration, braking and turn inertia.
 // Mobile FPS controls: left stick moves; right-side swipe aims.
 const deadZone=.12;
 const axis=v=>Math.abs(v)<=deadZone?0:Math.sign(v)*(Math.abs(v)-deadZone)/(1-deadZone);
@@ -664,6 +700,6 @@ let camAxis=0,camPointer=null;const camStick=$('camjoy'),camKnob=$('camknob');fu
 let sid=null,stick=$('joy'),knob=$('knob');function setStick(e){let r=stick.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,max=r.width*.3,m=Math.hypot(x,y);if(m>max){x*=max/m;y*=max/m}joy={x:x/max,y:y/max};knob.style.transform='translate('+x+'px,'+y+'px)'}
 stick.addEventListener('pointerdown',e=>{if(sid!==null)return;e.preventDefault();sid=e.pointerId;stick.setPointerCapture(sid);setStick(e)});stick.addEventListener('pointermove',e=>{if(e.pointerId===sid)setStick(e)});function release(){sid=null;joy={x:0,y:0};knob.style.transform=''}for(let ev of ['pointerup','pointercancel','lostpointercapture'])stick.addEventListener(ev,release);
 const gameArea=$('game');gameArea.addEventListener('pointerdown',e=>{if(e.target.closest('#joy,#camjoy,#actions,button')||e.clientX<gameArea.getBoundingClientRect().left+gameArea.getBoundingClientRect().width*.42)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};gameArea.setPointerCapture(e.pointerId);e.preventDefault()});gameArea.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;let dx=e.clientX-drag.x;p.a+=dx*.004;p.a=Math.atan2(Math.sin(p.a),Math.cos(p.a));turnSpeed=0;drag.x=e.clientX;drag.y=e.clientY;e.preventDefault()});for(let ev of ['pointerup','pointercancel','lostpointercapture'])gameArea.addEventListener(ev,e=>{if(drag?.id===e.pointerId)drag=null});
-const map={w:'w',ArrowUp:'w',s:'s',ArrowDown:'s',a:'a',ArrowLeft:'a',d:'d',ArrowRight:'d'};window.addEventListener('keydown',e=>{if(map[e.key]){keys[map[e.key]]=true;e.preventDefault()}if(e.repeat)return;if(e.code==='Space'){attack();e.preventDefault()}if(e.key==='r')magic();if(e.key==='h')heal();if(e.key==='f')talk()});window.addEventListener('keyup',e=>{if(map[e.key])keys[map[e.key]]=false});$('attack').onclick=attack;$('magic').onclick=magic;$('heal').onclick=heal;$('talk').onclick=talk;$('reset').onclick=()=>{if(confirm('Neues Spiel starten?')){localStorage.removeItem('morgenhain-v2');init(false)}};setInterval(save,8000);window.addEventListener('pagehide',save);init();requestAnimationFrame(update);
+const map={w:'w',ArrowUp:'w',s:'s',ArrowDown:'s',a:'a',ArrowLeft:'a',d:'d',ArrowRight:'d'};window.addEventListener('keydown',e=>{if(map[e.key]){keys[map[e.key]]=true;e.preventDefault()}if(e.repeat)return;if(e.code==='Space'){attack();e.preventDefault()}if(e.key==='r')magic();if(e.key==='h')heal();if(e.key==='f')talk();if(e.key==='e')action();if(e.key==='i')toggleInventory()});window.addEventListener('keyup',e=>{if(map[e.key])keys[map[e.key]]=false});$('attack').onclick=attack;$('magic').onclick=magic;$('heal').onclick=heal;$('talk').onclick=talk;$('action').onclick=action;$('inventoryBtn').onclick=toggleInventory;$('reset').onclick=()=>{if(confirm('Neues Spiel starten?')){localStorage.removeItem('morgenhain-v2');init(false)}};setInterval(save,8000);window.addEventListener('pagehide',save);init();requestAnimationFrame(update);
 })();
 </script></body></html>
