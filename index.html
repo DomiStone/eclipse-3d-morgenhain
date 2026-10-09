@@ -65,9 +65,9 @@ let fx=Math.sin(cam),fz=-Math.cos(cam),eye=[px-fx*14,10,pz-fz*14],target=[px+fx*
 function update(ms){try{let dt=Math.min((ms-last)/1000||.016,.05);last=ms;clock=(clock+dt*.15)%24;manualCam=Math.max(0,manualCam-dt);let ix=joy.x+(keys.d?1:0)-(keys.a?1:0),iy=joy.y+(keys.s?1:0)-(keys.w?1:0),mag=Math.hypot(ix,iy);if(mag>1){ix/=mag;iy/=mag;mag=1}gate=clamp(gate+((Math.abs(p.x)<9&&Math.abs(p.z+25)<17)?1:-1)*dt*3.5,0,1);if(mag>.1&&p.hp>0){
   // Classic third-person controls: horizontal joystick rotates the knight,
   // vertical joystick moves along the knight's own forward axis.
-  let turn=ix*dt*2.9;
+  const deadZone=.14;let horizontal=Math.abs(ix)>deadZone?Math.sign(ix)*(Math.abs(ix)-deadZone)/(1-deadZone):0;let turn=-horizontal*dt*1.2;
   p.a=(p.a||0)+turn;
-  let forward=-iy;
+  let forward=Math.abs(iy)>.14?-Math.sign(iy)*(Math.abs(iy)-.14)/.86:0;
   let speed=forward>=0?12:7;
   let step=forward*speed*dt;
   let vx=Math.sin(p.a)*step,vz=-Math.cos(p.a)*step;
