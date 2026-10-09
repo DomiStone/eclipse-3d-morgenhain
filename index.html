@@ -59,14 +59,14 @@ const faces=[
 [[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0],1],
 [[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1],.52]];
 for(let face of faces){let tint=face[4];for(let i of [0,1,2,0,2,3]){let a=face[i],xx=a[0],zz=a[2];if(viewModel){let localX=xx,localY=a[1],localZ=zz;if(swordPose){let dx=localX-swordPose.x,dy=localY-swordPose.y,dz=localZ-swordPose.z,tilt=swordPose.tilt,lean=swordPose.lean;let ty=dy*Math.cos(tilt)-dz*Math.sin(tilt),tz=dy*Math.sin(tilt)+dz*Math.cos(tilt);localX=swordPose.x+dx*Math.cos(lean)-ty*Math.sin(lean);localY=swordPose.y+dx*Math.sin(lean)+ty*Math.cos(lean);localZ=swordPose.z+tz}let co=Math.cos(p.a||0),si=Math.sin(p.a||0);xx=p.x+localX*co-localZ*si;zz=p.z+localX*si+localZ*co;a=[xx,2.85+localY,zz]}else if(rotatePlayer){let dx=xx-p.x,dz=zz-p.z,angle=p.a||0,co=Math.cos(angle),si=Math.sin(angle);xx=p.x+dx*co+dz*si;zz=p.z-dx*si+dz*co}verts.push(xx,a[1],zz,rgb[0]*tint,rgb[1]*tint,rgb[2]*tint)}}}
-function humanoid(x,z,color,scale=1){
+function humanoid(x,z,color,scale=1,walk=0){
  const c=(dx,y,dz,w,h,d,shade)=>cube(x+dx*scale,y*scale,z+dz*scale,w*scale,h*scale,d*scale,shade);
  // Boots, trousers, tunic, leather belt, sleeves, hands, face and hair.
- for(let side of [-1,1]){c(side*.23,0,-.06,.32,.27,.66,'#44392f');c(side*.23,.27,0,.30,.93,.43,'#4b5156')}
+ for(let side of [-1,1]){const swing=Math.sin(walk+side*1.5707963)*.30;c(side*.23,Math.max(0,swing)*.22,-.06+swing,.32,.27,.66,'#44392f');c(side*.23,.27+Math.max(0,swing)*.10,swing*.48,.30,.93,.43,'#4b5156')}
  c(0,1.16,0,1.04,1.40,.62,color);
  c(0,1.43,-.33,1.07,.20,.12,'#533e2c');c(0,1.47,-.41,.22,.20,.07,'#c4a36c');
  c(0,2.38,-.04,.86,.24,.57,'#e3d4b9');
- for(let side of [-1,1]){c(side*.68,1.30,0,.34,1.10,.47,color);c(side*.68,1.04,-.03,.35,.27,.47,'#c89e80')}
+ for(let side of [-1,1]){const swing=Math.sin(walk+side*1.5707963)*.36;c(side*.68,1.30,-swing*.42,.34,1.10,.47,color);c(side*.68,1.04,-.03-swing,.35,.27,.47,'#c89e80')}
  c(0,2.72,0,.72,.77,.66,'#cda58a');
  c(0,3.41,.03,.80,.24,.76,'#4a342d');c(0,3.18,.31,.82,.23,.18,'#594237');
  for(let side of [-1,1]){c(side*.18,3.05,-.346,.085,.085,.035,'#292e34');c(side*.18,2.87,-.354,.12,.035,.04,'#9b705f')}
@@ -410,7 +410,8 @@ for(let i=0;i<npcs.length;i++){
  const n=npcs[i],child=['Finn','Mila','Theo','Ida'].includes(n.name),scale=child?.72:1;
  if(n.indoors)continue;
  const gait=n.idle?0:Math.sin(n.walk||0),sway=n.idle?0:Math.cos(n.walk||0);
- humanoid(n.x,n.z,n.color,scale);
+ const x=n.x,z=n.z;
+ humanoid(x,z,n.color,scale,n.idle?0:(n.walk||0));
  // Water bucket visibly carried home after filling at the well.
  if(n.carryingWater){
   cube(x+.73*scale,.68*scale,z,.42*scale,.46*scale,.40*scale,'#7a5738');
@@ -418,7 +419,6 @@ for(let i=0;i<npcs.length;i++){
   cube(x+.73*scale,1.31*scale,z,.12*scale,.31*scale,.12*scale,'#b9a27a');
  }
  // Personal accessories and different walking silhouettes.
- const x=n.x,z=n.z;
  if(i%4===0){cube(x,3.47*scale,z,.92*scale,.17*scale,.91*scale,'#67503a');cube(x,3.54*scale,z,.45*scale,.24*scale,.47*scale,'#6b5239')}
  if(i%4===1){cube(x,1.56*scale,z+.36*scale,.85*scale,.92*scale,.12*scale,'#7c6549')}
  if(i%4===2){cube(x+.62*scale,.87*scale,z-.19*scale,.33*scale,.47*scale,.35*scale,'#8d6740')}
@@ -501,10 +501,15 @@ for(let i=0;i<npcs.length;i++){
  const side=hx<0?-1:1;
  const wellX=side*4.9;
  // Routes follow open streets, never through solid houses.
+ const farX=side*(15+(i%3)*2),farZ=(i%2===0?16:-16);
  const waypoints=[
   {x:side*7,z:n.homeZ<0?-2:3},
   {x:wellX,z:side<0?-.4:.4},
   {x:wellX,z:side<0?-.4:.4},
+  {x:side*7,z:3},
+  {x:side*7,z:farZ},
+  {x:farX,z:farZ},
+  {x:side*7,z:farZ},
   {x:side*7,z:3},
   {x:hx,z:doorZ-1.1},
   {x:hx,z:doorZ},
@@ -517,19 +522,19 @@ for(let i=0;i<npcs.length;i++){
   n.taskWait-=dt;n.idle=true;
   if(n.taskWait>0)continue;
   if(n.taskStep===2)n.carryingWater=true;
-  if(n.taskStep===6){n.indoors=false;n.carryingWater=false}
+  if(n.taskStep===10){n.indoors=false;n.carryingWater=false}
  }
  const target=waypoints[n.taskStep],dx=target.x-n.x,dz=target.z-n.z,dist=Math.hypot(dx,dz);
  if(dist>.12){
-  const speed=.8+(i%4)*.14,step=Math.min(dist,dt*speed);
+  const speed=1.35+(i%4)*.18,step=Math.min(dist,dt*speed);
   n.x+=dx/dist*step;n.z+=dz/dist*step;
   n.facing=Math.atan2(-dx,-dz);n.walk=(n.walk||0)+step*6;
   n.idle=false;
  }else{
   n.x=target.x;n.z=target.z;
   if(n.taskStep===2)n.taskWait=4+(i%3); // Filling a bucket at the well.
-  if(n.taskStep===6){n.indoors=true;n.taskWait=12+(i%5)*4}
-  if(n.taskStep===9)n.taskWait=5+(i%4)*3;
+  if(n.taskStep===10){n.indoors=true;n.taskWait=12+(i%5)*4}
+  if(n.taskStep===13)n.taskWait=5+(i%4)*3;
   n.taskStep=(n.taskStep+1)%waypoints.length;
   n.idle=true;
  }
