@@ -280,9 +280,29 @@ if(gate<.995){
  cube(0,bottom+remaining*.53,-24.05,.32,remaining*.65,.19,'#343b3d');
  cube(0,bottom+remaining*.53,-23.93,.16,remaining*.6,.1,'#9b9b90');
 }
-for(let i=0;i<houses.length;i++)detailedHouse(houses[i],i);
+for(let i=0;i<houses.length;i++){
+ detailedHouse(houses[i],i);
+ const [hx,hz,hw,hd]=houses[i],cx=hx+hw*.25,cz=hz+hd*.12;
+ // Stone chimney, soot-dark cap and staggered drifting smoke.
+ cube(cx,6.4,cz,1.25,2.7,1.2,'#847f75');
+ cube(cx,8.85,cz,1.5,.25,1.45,'#5e5b55');
+ cube(cx,9.05,cz,.83,.12,.83,'#353a3b');
+ for(let puff=0;puff<3;puff++){
+  const drift=(clock*.32+i*.8+puff*.55)%3;
+  const px=cx+drift*.33,py=9.5+puff*.85+drift*.18,pz=cz+drift*.24;
+  cube(px,py,pz,.36+puff*.22,.24+puff*.15,.38+puff*.20,puff===0?'#a5a9a5':'#bec1b9');
+ }
+}
 villageDetails();
 cube(0,0,0,5,1.4,5,'#a8aba6');cube(0,1.4,0,4,.15,4,'#55b4d3');
+// Wooden well frame, rope winch and shelter roof.
+for(const x of [-2.15,2.15])cube(x,1.4,0,.25,3.2,.28,'#694a34');
+cube(0,4.45,0,5.2,.25,3.0,'#78543b');
+cube(0,4.69,0,5.6,.16,3.35,'#946c4a');
+cube(0,3.35,0,4.6,.20,.22,'#5c4230');
+cube(0,2.45,0,.12,1.75,.12,'#b7a07a');
+cube(0,1.6,0,.76,.55,.65,'#806044');
+cube(.47,3.34,0,.65,.15,.15,'#c1a57b');
 
 // Deterministic scattered woodland: irregular spacing, clearings and mixed tree heights.
 for(let gx=-10;gx<=10;gx++)for(let gz=-10;gz<=10;gz++){
@@ -294,6 +314,13 @@ for(let gx=-10;gx<=10;gx++)for(let gz=-10;gz<=10;gz++){
  const seed=.15+noise(4)*.85;
  wildTree(x,z,seed);
  if(noise(5)>.82)wildTree(x+2.4+noise(6)*2,z-1.7-noise(7)*2,seed*.76);
+}
+// Small wild mushrooms in scattered forest pockets.
+for(let i=0;i<35;i++){
+ const a=i*2.39996,r=40+(i%12)*4.1,x=Math.cos(a)*r,z=Math.sin(a)*r;
+ cube(x,0,z,.20,.26,.20,'#e4d6bd');
+ cube(x,.28,z,.55,.20,.54,i%3===0?'#a84c40':i%3===1?'#b18a59':'#80644c');
+ if(i%3===0)cube(x-.12,.47,z-.09,.10,.05,.10,'#e9d5b8');
 }
 // Village atmosphere: warm lanterns, cobblestones, and low roadside shrubs.
 for(let z of [-18,-8,7,17])for(let side of [-1,1])lantern(side*4.6,z);
