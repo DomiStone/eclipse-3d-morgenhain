@@ -34,6 +34,8 @@ main{max-width:850px}
 (()=>{'use strict';const $=id=>document.getElementById(id),cv=$('view');let gl=cv.getContext('webgl',{antialias:true,alpha:false});let keys={},joy={x:0,y:0},cam=0,manualCam=0,drag=null,slash=0,spell=0,hitDelay=0,msgTime=0,gate=0,last=null,clock=8,moveSpeed=0,strafeSpeed=0,turnSpeed=0;
 const villagers=[['Mira',0,10,'#9d79b6'],['Borin',-7,15,'#a78a67'],['Lysa',7,3,'#d5ad67'],['Elara',-6,4,'#ca8976'],['Rurik',2,-18,'#7897bc'],['Sven',-17,0,'#7897bc'],['Finn',4,-4,'#d6b365'],['Mila',-4,-4,'#d67a96'],['Theo',4,7,'#6eafbf'],['Ida',-4,7,'#cfbd79'],['Tarek',17,-15,'#9ca867'],['Hilda',-17,-15,'#b2aa68']];
 const houses=[[-13,-12,9,8], [13,-12,10,8],[-13,11,10,9],[13,11,9,9],[0,17,10,8]];
+const outerVillages=[{name:'Sonnenfeld',x:120,z:55,color:'#bd986d'},{name:'Frosttal',x:-155,z:-95,color:'#a5a3b2'},{name:'Eichenfurt',x:225,z:-165,color:'#ba9972'}];
+let townResidents=[];
 let p,npcs,enemies,chests,quest,wolves,bossDead,inventory=[],equippedWeapon='rusty';
 let worldSeconds=0,guards=[{x:-5.8,z:-28.4,patrol:0,walk:0},{x:5.8,z:-28.4,patrol:0,walk:0}];
 const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),d=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -75,7 +77,7 @@ function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.
   if(c.lootClaimed!==true){
    c.open=false;c.openProgress=0;c.lootClaimed=false;
   }else{c.open=true;c.openProgress=1}
- });inventory=Array.isArray(data?.inventory)?data.inventory:[];equippedWeapon=data?.equippedWeapon||'rusty';npcs=villagers.map((v,i)=>({facing:0,name:v[0],x:v[1],z:v[2],homeX:v[1],homeZ:v[2],color:v[3],phase:i*1.7,taskStep:0,taskWait:2+i%4,indoors:false,carryingWater:false}));note('🏰 Willkommen in Morgenhain!');hud()}
+ });inventory=Array.isArray(data?.inventory)?data.inventory:[];equippedWeapon=data?.equippedWeapon||'rusty';npcs=villagers.map((v,i)=>({facing:0,name:v[0],x:v[1],z:v[2],homeX:v[1],homeZ:v[2],color:v[3],phase:i*1.7,taskStep:0,taskWait:2+i%4,indoors:false,carryingWater:false}));initTownResidents();note('🏰 Willkommen in Morgenhain!');hud()}
 function save(){try{localStorage.setItem('morgenhain-v2',JSON.stringify({p,quest,wolves,bossDead,clock,enemies,chests,inventory,equippedWeapon}))}catch(e){}}
 const weaponCatalog={
  rusty:{name:'Altes Schwert',icon:'⚔️',damage:0},
@@ -151,7 +153,7 @@ function toggleInventory(){
  const panel=$('inventoryPanel');panel.open=!panel.open;
  if(panel.open){inventoryUI();panel.scrollIntoView({block:'nearest',behavior:'smooth'})}
 }
-function talk(){if(Math.hypot(p.x,p.z)<4.6){p.hp=100;note('💧 Brunnen heilt dich vollständig!');hud();return}let n=npcs.filter(n=>!n.indoors&&d(n,p)<5.5).sort((a,b)=>d(a,p)-d(b,p))[0];if(!n)return note('💬 Geh näher zu einer Person.');if(n.name==='Mira'){if(quest===0){quest=1;note('📜 Mira: Besiege drei Schattenwölfe!')}else if(quest===2){quest=3;p.gold+=40;p.potions+=2;note('📜 Mira: Besiege den Schattenwächter! +40 Gold, +2 Tränke')}else note('💬 Mira: Beschütze Morgenhain!')}else if(n.name==='Borin'){if(p.gold>=25){p.gold-=25;p.power++;note('🔨 Schwert verbessert!')}else note('🔨 Verbesserung kostet 25 Gold')}else if(n.name==='Lysa'){if(p.gold>=12){p.gold-=12;p.potions++;note('🧪 Trank gekauft!')}else note('🛒 Heiltrank kostet 12 Gold')}else note('💬 '+n.name+': Sei gegrüßt, Held!');hud();save()}
+function talk(){if(Math.hypot(p.x,p.z)<4.6){p.hp=100;note('💧 Brunnen heilt dich vollständig!');hud();return}let n=npcs.filter(n=>!n.indoors&&d(n,p)<5.5).sort((a,b)=>d(a,p)-d(b,p))[0];if(!n){const visitor=townResidents.filter(t=>d(t,p)<5.5).sort((a,b)=>d(a,p)-d(b,p))[0];if(visitor)return note('💬 '+visitor.name+' aus '+visitor.town+': '+(visitor.child?'Komm, spiel mit uns!':visitor.role==='farmer'?'Die Felder brauchen Pflege!':visitor.role==='smith'?'Hier wird täglich geschmiedet!':visitor.role==='merchant'?'Willkommen auf unserem Markt!':visitor.role==='baker'?'Frisches Brot aus dem Ofen!':visitor.role==='woodcutter'?'Wir sammeln Holz für den Winter.':visitor.role==='guard'?'Ich bewache unser Dorf.':'Schön, dass du uns besuchst!'));return note('💬 Geh näher zu einer Person.');}if(n.name==='Mira'){if(quest===0){quest=1;note('📜 Mira: Besiege drei Schattenwölfe!')}else if(quest===2){quest=3;p.gold+=40;p.potions+=2;note('📜 Mira: Besiege den Schattenwächter! +40 Gold, +2 Tränke')}else note('💬 Mira: Beschütze Morgenhain!')}else if(n.name==='Borin'){if(p.gold>=25){p.gold-=25;p.power++;note('🔨 Schwert verbessert!')}else note('🔨 Verbesserung kostet 25 Gold')}else if(n.name==='Lysa'){if(p.gold>=12){p.gold-=12;p.potions++;note('🧪 Trank gekauft!')}else note('🛒 Heiltrank kostet 12 Gold')}else note('💬 '+n.name+': Sei gegrüßt, Held!');hud();save()}
 
 const vert=`attribute vec3 position;attribute vec3 color;uniform mat4 projection;uniform mat4 view;varying vec3 vColor;void main(){gl_Position=projection*view*vec4(position,1.);vColor=color;}`;
 const frag=`precision mediump float;varying vec3 vColor;uniform float light;void main(){gl_FragColor=vec4(vColor*light,1.);}`;
@@ -341,6 +343,157 @@ function shadowWolf(e){
  c(0,1.06,.98,.23,.28,.75,'#45404c');
  if(boss){c(0,2.01,-.74,.21,.44,.19,'#c1a4c6');c(0,1.26,-1.26,.40,.20,.17,'#9e657f')}
 }
+function initTownResidents(){
+ const names=[
+  ['Greta','Hannes','Klara','Otto','Berta','Jakob','Nora','Leni','Emil','Fritz'],
+  ['Alva','Torben','Sigrid','Leif','Runa','Erik','Ylva','Maja','Nils','Oskar'],
+  ['Tilda','Bruno','Rosa','Anton','Marta','Jorin','Elsa','Pia','Ben','Lukas']
+ ];
+ const roles=['farmer','smith','merchant','woodcutter','baker','guard','weaver','child','child','child'];
+ const colors=['#a67c53','#777e91','#a36b7a','#758e68','#b89b62','#6986a3','#a87899','#e1ad66','#76afaa','#bd9471'];
+ townResidents=[];
+ for(let v=0;v<outerVillages.length;v++){
+  const town=outerVillages[v];
+  for(let i=0;i<roles.length;i++){
+   const role=roles[i],child=role==='child';
+   const homeX=town.x+(i%2===0?-1:1)*(5+(i%3)*2);
+   const homeZ=town.z+(i%2===0?-9:9);
+   townResidents.push({name:names[v][i],town:town.name,role,color:colors[i],child,
+    x:homeX,z:homeZ,homeX,homeZ,phase:i*.85+v*2,walk:0,facing:0,idle:true,
+    activity:'home',step:0,wait:1+i*.6,carrying:false});
+  }
+ }
+}
+function townWaypoints(n,town){
+ const x=town.x,z=town.z;
+ const jobs={
+  farmer:[x+25,z+13],smith:[x-21,z-16],merchant:[x-4,z+16],
+  woodcutter:[x+25,z-17],baker:[x+17,z+17],guard:[x,z-23],weaver:[x-18,z+16]
+ };
+ const job=jobs[n.role]||[x,z];
+ const child=n.child;
+ const playA=child?[x-7+(n.phase%3)*2,z-2]:job;
+ const playB=child?[x+8-(n.phase%4)*2,z+5]:[job[0]+(n.role==='farmer'?4:1),job[1]+2];
+ return [
+  [n.homeX,n.homeZ],
+  [x+(n.homeX<x?-6:6),n.homeZ],
+  [x+(n.homeX<x?-6:6),z],
+  [x,z],
+  playA,playB,playA,
+  [x,z],
+  [x+(n.homeX<x?-6:6),z],
+  [n.homeX,n.homeZ]
+ ];
+}
+function updateTownResidents(dt){
+ const nighttime=clock>=21||clock<6;
+ for(const n of townResidents){
+  const town=outerVillages.find(v=>v.name===n.town);
+  if(Math.hypot(p.x-town.x,p.z-town.z)>145)continue;
+  n.phase+=dt;
+  if(nighttime){
+   const dx=n.homeX-n.x,dz=n.homeZ-n.z,dist=Math.hypot(dx,dz);
+   if(dist>.25){
+    const desired=Math.atan2(dx,-dz),delta=Math.atan2(Math.sin(desired-n.facing),Math.cos(desired-n.facing));
+    n.facing+=clamp(delta,-dt*4,dt*4);
+    const amount=Math.min(dist,dt*(n.child?1.35:1.2))*Math.max(0,Math.cos(delta));
+    n.x+=dx/dist*amount;n.z+=dz/dist*amount;n.walk+=amount*6;n.idle=amount<.02;
+    n.activity='going home';
+   }else{n.x=n.homeX;n.z=n.homeZ;n.idle=true;n.activity='sleeping'}
+   continue;
+  }
+  const points=townWaypoints(n,town);
+  if(n.wait>0){n.wait-=dt;n.idle=true;continue}
+  const [tx,tz]=points[n.step],dx=tx-n.x,dz=tz-n.z,dist=Math.hypot(dx,dz);
+  if(dist>.20){
+   const desired=Math.atan2(dx,-dz),delta=Math.atan2(Math.sin(desired-n.facing),Math.cos(desired-n.facing));
+   n.facing+=clamp(delta,-dt*4.5,dt*4.5);
+   const amount=Math.min(dist,dt*(n.child?1.65:1.2))*Math.max(0,Math.cos(delta));
+   n.x+=dx/dist*amount;n.z+=dz/dist*amount;
+   n.walk+=amount*7;n.idle=amount<.02;
+   n.activity=n.child?'playing':'walking';
+  }else{
+   n.x=tx;n.z=tz;n.idle=true;
+   n.activity=n.child?'playing':n.step>=4&&n.step<=6?n.role:'chatting';
+   n.wait=n.child?(n.step>=4&&n.step<=6?2:1):(n.step>=4&&n.step<=6?7:1.8);
+   n.step=(n.step+1)%points.length;
+  }
+ }
+}
+function renderTownResidents(town){
+ for(const n of townResidents){
+  if(n.town!==town.name||Math.hypot(n.x-p.x,n.z-p.z)>105)continue;
+  const scale=n.child?.69:1;
+  humanoid(n.x,n.z,n.color,scale,n.idle?0:n.walk,n.facing);
+  const x=n.x,z=n.z,work=!n.child&&n.idle;
+  if(n.role==='farmer'&&work){
+   cube(x+.65,0,z,.15,2.0,.17,'#795538');
+   cube(x+.65,1.82,z-.15,.5,.26,.25,'#a3a9a4');
+  }else if(n.role==='smith'&&work){
+   const lift=(Math.sin(worldSeconds*4)+1)*.30;
+   cube(x+.7,1.35+lift,z-.2,.18,.85,.16,'#6c4e37');
+   cube(x+.7,2.08+lift,z-.2,.54,.23,.3,'#a8a8a6');
+  }else if(n.role==='woodcutter'&&work){
+   cube(x+.7,1.0,z-.2,.16,1.0,.15,'#7d593d');
+   cube(x+.7,1.85,z-.2,.55,.42,.22,'#a7adaf');
+  }else if(n.role==='merchant'||n.role==='baker'){
+   cube(x+.64,1.0,z-.2,.36,.33,.39,'#a07c48');
+  }else if(n.role==='guard'){
+   cube(x,3.18,z,.98,.27,.92,'#8c989e');
+   cube(x+.75,.2,z,.16,3.1,.16,'#a9aeb3');
+  }else if(n.role==='weaver'&&work){
+   cube(x+.65,.5,z,.55,.55,.15,'#e1c391');
+  }
+  if(n.child&&n.idle&&n.activity==='playing'){
+   cube(x+.48,.15+Math.abs(Math.sin(worldSeconds*3+n.phase))*.6,z-.4,.34,.34,.34,'#dca957');
+  }
+ }
+}
+function renderTownWork(town){
+ const x=town.x,z=town.z;
+ // Smithy and forge.
+ cube(x-21,0,z-16,3,1.7,2.2,'#69615b');
+ cube(x-21,1.7,z-16,2.5,.3,2,'#414244');
+ cube(x-22,1.0,z-16,.75,.42,.65,'#f49d43');
+ cube(x-20,0,z-14,1.9,.85,1.2,'#53565a');
+ // Farmers cultivate rows of crops on the edge of town.
+ for(let row=0;row<4;row++){
+  cube(x+21+row*2.2,-.07,z+13,1.3,.16,11,'#73573a');
+  for(let k=0;k<5;k++)cube(x+21+row*2.2,.08,z+8+k*2.1,.33,.7+(k%2)*.25,.3,'#719d4e');
+ }
+ // Bakery, market goods and a carpenter's timber stack.
+ cube(x+17,0,z+17,3.4,1.2,1.9,'#a87c4c');
+ for(let k=0;k<5;k++)cube(x+15.8+k*.56,1.21,z+17,.4,.3,.65,'#d4b077');
+ marketStall(x-4,z+16,'#aa7052');
+ for(let k=0;k<5;k++)cube(x+23,0,z-20+k*1.15,3.3,.44,.6,'#8a6643');
+ // Children's playground.
+ for(const side of [-1,1])cube(x+side*3,0,z-4,.18,2.8,.18,'#806043');
+ cube(x,2.7,z-4,6.2,.18,.2,'#9b744a');
+ cube(x-1.8,.45+Math.sin(worldSeconds)*.15,z-4,.9,.12,.8,'#c69a63');
+ cube(x+1.8,.45-Math.sin(worldSeconds)*.15,z-4,.9,.12,.8,'#c69a63');
+ // Village animals and daily work.
+ villageAnimal(x+25+Math.sin(worldSeconds*.35)*1.5,z+24,'sheep',worldSeconds);
+ villageAnimal(x-12+Math.sin(worldSeconds*.6)*1.3,z+22,'chicken',worldSeconds+2);
+ renderTownResidents(town);
+}
+function renderGreatMountain(){
+ const mx=-35,mz=185;
+ if(Math.hypot(mx-p.x,mz-p.z)>240)return;
+ // One massive, snow-covered mountain replaces the scattered peaks.
+ cube(mx,-.2,mz,132,5,128,'#67716d');
+ for(let j=0;j<15;j++){
+  const shrink=j*7.9,w=130-shrink,depth=125-shrink*.94;
+  const y=4+j*6.2;
+  const stone=j<8?'#727974':j<11?'#838b89':'#cbd3d2';
+  cube(mx+Math.sin(j*.8)*3,y,mz+Math.cos(j*.7)*2,w,6.3,depth,stone);
+ }
+ cube(mx,97,mz,18,8,16,'#f4f4ed');
+ // Distinct rugged ridges on the lower slopes.
+ for(const [dx,dz,h] of [[-48,12,28],[43,-23,35],[17,46,24],[-21,-45,32]]){
+  cube(mx+dx,0,mz+dz,24,h,23,'#777d79');
+  cube(mx+dx,h,mz+dz,14,8,13,'#8d9692');
+ }
+}
 function lantern(x,z,post=3.1){
  const night=clock>=19||clock<7;
  cube(x,0,z,.24,post,.24,'#514537');
@@ -397,8 +550,10 @@ function renderMonster(e){
 function renderOuterWorld(){
  // Render only the nearby chunks: large explorable world, modest mobile draw cost.
  const range=100,cell=14;
- const villages=[[120,55,'#bd986d'],[-155,-95,'#a5a3b2'],[225,-165,'#ba9972']];
- for(const [vx,vz,color] of villages){
+ renderGreatMountain();
+ const villages=outerVillages;
+ for(const town of villages){
+  const {x:vx,z:vz,color}=town;
   if(Math.hypot(vx-p.x,vz-p.z)>range+30)continue;
   cube(vx,-.20,vz,45,.15,40,'#8d9b77');
   cube(vx,-.13,vz,7,.09,45,'#b9a98a');
@@ -413,6 +568,7 @@ function renderOuterWorld(){
   }
   for(const [lx,lz] of [[-4,-16],[4,16],[-19,0],[19,0]])lantern(vx+lx,vz+lz);
   cube(vx,0,vz,3,1.4,3,'#a9ada6');cube(vx,1.4,vz,2.4,.1,2.4,'#65b4ce');
+  renderTownWork(town);
  }
  for(const [lx,lz,rx,rz] of [[95,-65,22,17],[-105,92,28,19],[185,105,32,22]]){
   if(Math.hypot(lx-p.x,lz-p.z)>range+35)continue;
@@ -427,15 +583,16 @@ function renderOuterWorld(){
  for(let gx=gx0;gx<=gx1;gx++)for(let gz=gz0;gz<=gz1;gz++){
   const x=gx*cell,z=gz*cell;
   if(Math.abs(x)<37&&Math.abs(z)<37)continue;
-  if(villages.some(v=>Math.abs(x-v[0])<29&&Math.abs(z-v[1])<27))continue;
+  if(villages.some(v=>Math.abs(x-v.x)<31&&Math.abs(z-v.z)<30))continue;
+  if(Math.hypot(x+35,z-185)<80)continue;
   if(Math.hypot(x-p.x,z-p.z)>range)continue;
   const hash=(n)=>{const t=Math.sin(gx*127.1+gz*311.7+n*47.9)*43758.5453;return t-Math.floor(t)};
-  if(hash(1)<.13){
+  if(hash(1)<.006){
    const h=8+hash(2)*22;
    cube(x,-.16,z,10,h*.38,10,'#777d76');
    cube(x,h*.38-.16,z,7,h*.4,7,'#8c9087');
    cube(x,h*.78-.16,z,3,h*.22,3,h>21?'#d9dcd6':'#777f79');
-  }else if(hash(3)<.32){
+  }else if(hash(3)<.40){
    const h=4+hash(4)*4;
    cube(x,0,z,.55,h,.58,'#66513a');
    cube(x,h-.8,z,3.3,2.5,3.2,hash(5)<.5?'#497748':'#62834b');
@@ -836,6 +993,7 @@ for(let i=0;i<npcs.length;i++){
   n.idle=true;
  }
 }
+updateTownResidents(dt);
 // Gate watch: sentries patrol the entrance, scan for wolves and repel nearby threats.
 for(let i=0;i<guards.length;i++){
  const g=guards[i],baseX=i===0?-5.8:5.8;
