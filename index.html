@@ -358,7 +358,7 @@ const vx=(sn*moveSpeed+cs*strafeSpeed)*dt;
 const vz=(-cs*moveSpeed+sn*strafeSpeed)*dt;
 if(!collision(p.x+vx,p.z))p.x+=vx;
 if(!collision(p.x,p.z+vz))p.z+=vz;
-if(Math.abs(camAxis)>.12){const turn=Math.sign(camAxis)*(Math.abs(camAxis)-.12)/.88;p.a+=turn*dt*2.5;p.a=Math.atan2(Math.sin(p.a),Math.cos(p.a));}
+if(Math.abs(camAxis)>.12){const turn=Math.sign(camAxis)*(Math.abs(camAxis)-.12)/.88;p.a+=turn*dt*1.05;p.a=Math.atan2(Math.sin(p.a),Math.cos(p.a));}
 cam=p.a;
 slash=Math.max(0,slash-dt);spell=Math.max(0,spell-dt);hitDelay=Math.max(0,hitDelay-dt);msgTime-=dt;
 // Each villager has a distinct routine, pace, walking direction and idle pauses.
