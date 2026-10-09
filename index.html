@@ -40,7 +40,7 @@ let p,npcs,enemies,chests,quest,wolves,bossDead,inventory=[],equippedWeapon='rus
 let worldSeconds=0,guards=[{x:-5.8,z:-28.4,patrol:0,walk:0},{x:5.8,z:-28.4,patrol:0,walk:0}];
 const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),d=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 function note(t){$('msg').textContent=t;msgTime=4}
-function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>120||Math.abs(p.z)>120){p.x=0;p.z=-9}if(!Number.isFinite(p.hp))p.hp=100;if(!Number.isFinite(p.a))p.a=0;quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=Number.isFinite(p.a)?p.a:0;moveSpeed=0;strafeSpeed=0;turnSpeed=0;last=null;gate=0;worldSeconds=0;guards.forEach(g=>{g.patrol=0;g.walk=0;g.attackCooldown=0});enemies=data?.enemies||Array.from({length:43},(_,i)=>{
+function init(load=true){let data=null;try{if(load)data=JSON.parse(localStorage.getItem('morgenhain-v2'))}catch(e){}p=data?.p||{x:0,z:-9,hp:100,gold:40,potions:3,power:0,level:1,xp:0};if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||Math.abs(p.x)>460||Math.abs(p.z)>460){p.x=0;p.z=-9}if(!Number.isFinite(p.hp))p.hp=100;if(!Number.isFinite(p.a))p.a=0;quest=data?.quest||0;wolves=data?.wolves||0;bossDead=data?.bossDead||false;clock=data?.clock||8;cam=Number.isFinite(p.a)?p.a:0;moveSpeed=0;strafeSpeed=0;turnSpeed=0;last=null;gate=0;worldSeconds=0;guards.forEach(g=>{g.patrol=0;g.walk=0;g.attackCooldown=0});enemies=data?.enemies||Array.from({length:43},(_,i)=>{
  const a=i*2.39996,r=39+(i%9)*24;
  const type=i%7===0?'golem':i%5===0?'spider':i%3===0?'skeleton':i%4===0?'slime':'wolf';
  return{x:Math.sin(a)*r,z:Math.cos(a)*r,hp:type==='golem'?20:type==='skeleton'?10:6,type,phase:i}
@@ -359,7 +359,7 @@ function initTownResidents(){
    const homeX=town.x+(i%2===0?-1:1)*(5+(i%3)*2);
    const homeZ=town.z+(i%2===0?-9:9);
    townResidents.push({name:names[v][i],town:town.name,role,color:colors[i],child,
-    x:homeX,z:homeZ,homeX,homeZ,phase:i*.85+v*2,walk:0,facing:0,idle:true,
+    x:homeX,z:homeZ,homeX,homeZ,playSeed:i,phase:i*.85+v*2,walk:0,facing:0,idle:true,
     activity:'home',step:0,wait:1+i*.6,carrying:false});
   }
  }
@@ -372,8 +372,8 @@ function townWaypoints(n,town){
  };
  const job=jobs[n.role]||[x,z];
  const child=n.child;
- const playA=child?[x-7+(n.phase%3)*2,z-2]:job;
- const playB=child?[x+8-(n.phase%4)*2,z+5]:[job[0]+(n.role==='farmer'?4:1),job[1]+2];
+ const playA=child?[x-7+(n.playSeed%3)*2,z-2]:job;
+ const playB=child?[x+8-(n.playSeed%4)*2,z+5]:[job[0]+(n.role==='farmer'?4:1),job[1]+2];
  return [
   [n.homeX,n.homeZ],
   [x+(n.homeX<x?-6:6),n.homeZ],
